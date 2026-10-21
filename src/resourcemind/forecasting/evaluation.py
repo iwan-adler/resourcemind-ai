@@ -41,6 +41,12 @@ class ForecastEvaluation:
     test_interval_coverage: dict[str, float]
     selected_model: str
     runtime_seconds: dict[str, float] = field(default_factory=dict)
+    # Per model: relative errors of horizon-total forecasts on the validation window,
+    # one row per forecast origin and one column per zone (used by the robustness check).
+    validation_total_residuals: dict[str, pd.DataFrame] = field(default_factory=dict)
+    # Same, on the held-out TEST window (model refitted on train + validation): never used
+    # for any choice, only to score plans out of sample.
+    test_total_residuals: dict[str, pd.DataFrame] = field(default_factory=dict)
 
 
 @dataclass
@@ -68,6 +74,17 @@ def _interval_quantiles(pred_rows: pd.DataFrame, horizon: int, lo: float, hi: fl
     return {"daily": daily, "total": total}
 
 
+def _total_residual_matrix(pred_rows: pd.DataFrame, horizon: int, zone_ids: list[str]) -> pd.DataFrame:
+    """Relative horizon-total errors as an (origin x zone) matrix; only origins complete for every zone."""
+    sums = pred_rows.groupby(["origin_date", "zone_id"]).agg(
+        y=("y", "sum"), pred=("pred", "sum"), k=("horizon", "count")
+    )
+    sums = sums[sums["k"] == horizon]
+    sums["rel"] = _relative_residuals(sums["y"].to_numpy(), sums["pred"].to_numpy())
+    matrix = sums["rel"].unstack("zone_id").reindex(columns=zone_ids)
+    return matrix.dropna()
+
+
 def split_dates(last_date: pd.Timestamp, config: ForecastConfig) -> dict[str, pd.Timestamp]:
     test_start = last_date - pd.Timedelta(days=config.test_days - 1)
     val_start = test_start - pd.Timedelta(days=config.validation_days)
@@ -93,7 +110,7 @@ def evaluate_forecasters(
         raise ValueError("history too short for the configured train/validation/test split")
 
     val_records, test_records, zone_records, horizon_records = [], [], [], []
-    quantiles, coverage, runtimes = {}, {}, {}
+    quantiles, coverage, runtimes, residuals, test_residuals = {}, {}, {}, {}, {}
     test_preds = test[["zone_id", "origin_date", "target_date", "horizon", "y"]].copy()
     lo_q, hi_q = config.interval_lower_quantile, config.interval_upper_quantile
 
@@ -103,6 +120,7 @@ def evaluate_forecasters(
         val_pred = val.assign(pred=model.predict(val))
         val_records.append({"model": name, **regression_metrics(val_pred["y"], val_pred["pred"])})
         quantiles[name] = _interval_quantiles(val_pred, horizon, lo_q, hi_q)
+        residuals[name] = _total_residual_matrix(val_pred, horizon, list(demand_wide.columns))
 
         model = make_model(name, random_state).fit(pd.concat([train, val]))
         pred = model.predict(test)
@@ -114,6 +132,7 @@ def evaluate_forecasters(
         y = test["y"].to_numpy()
         coverage[name] = float(np.mean((y >= lower) & (y <= upper)))
         frame = test.assign(pred=pred)
+        test_residuals[name] = _total_residual_matrix(frame, horizon, list(demand_wide.columns))
         for zone_id, grp in frame.groupby("zone_id"):
             zone_records.append({"model": name, "zone_id": zone_id, **regression_metrics(grp["y"], grp["pred"])})
         for h, grp in frame.groupby("horizon"):
@@ -135,6 +154,8 @@ def evaluate_forecasters(
         test_interval_coverage=coverage,
         selected_model=selected,
         runtime_seconds=runtimes,
+        validation_total_residuals=residuals,
+        test_total_residuals=test_residuals,
     )
 
 

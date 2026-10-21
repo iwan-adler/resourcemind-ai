@@ -419,3 +419,27 @@ def daily_teams_heatmap(table: pd.DataFrame, staging_capacity: np.ndarray) -> go
     fig.update_yaxes(autorange="reversed", gridcolor="rgba(0,0,0,0)")
     fig.update_xaxes(side="top", gridcolor="rgba(0,0,0,0)")
     return _style(fig, 60 + 34 * len(table))
+
+
+def robustness_chart(samples: pd.DataFrame, target: float) -> go.Figure:
+    """Distribution of coverage per plan across sampled demand outcomes (box plot)."""
+    colors = {
+        "current": STRATEGY_COLORS["current"],
+        "greedy": STRATEGY_COLORS["greedy"],
+        "optimized_point": STRATEGY_COLORS["optimized"],
+        "optimized_upper": "#A78BFA",
+        "optimized_expected": "#4ADE80",
+    }
+    fig = go.Figure()
+    for key, grp in samples.groupby("strategy", sort=False):
+        fig.add_box(
+            y=grp["coverage"] * 100,
+            name=grp["label"].iloc[0],
+            marker_color=colors.get(key, COLORS["neutral"]),
+            boxmean=True,
+            hovertemplate="%{y:.1f}%<extra></extra>",
+        )
+    fig.add_hline(y=target * 100, line_dash="dot", line_color=COLORS["critical"], annotation_text=f"{target:.0%}")
+    fig.update_yaxes(title="Coverage across demand outcomes (%)")
+    fig.update_layout(showlegend=False)
+    return _style(fig, 340)

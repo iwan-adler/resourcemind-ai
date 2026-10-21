@@ -241,9 +241,12 @@ def build_daily_problem(inputs: ScenarioInputs, problem: AllocationProblem, dema
 
 def run_daily_strategies(problem: MultiPeriodProblem, config: AppConfig) -> dict[str, DailyRun]:
     opt = config.optimizer
+    greedy = greedy_daily(problem)
     results = {
         "current": current_daily(problem),
-        "greedy": greedy_daily(problem),
+        "greedy": greedy,
+        # Warm-started from the greedy plan: on large problems the time limit can stop
+        # CP-SAT early, and starting from a valid plan keeps it from returning a worse one.
         "optimized": optimize_daily(
             problem,
             mode=opt.mode,
@@ -251,6 +254,7 @@ def run_daily_strategies(problem: MultiPeriodProblem, config: AppConfig) -> dict
             time_limit_seconds=opt.time_limit_seconds,
             num_workers=opt.num_workers,
             seed=config.seed,
+            hint=greedy.plan,
         ),
     }
     runs = {}

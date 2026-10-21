@@ -335,13 +335,26 @@ def optimize_daily(
     time_limit_seconds: float = 10.0,
     num_workers: int = 1,
     seed: int = 0,
+    hint: DailyPlan | None = None,
 ) -> DailyResult:
+    """Solve the day-by-day problem.
+
+    ``hint`` (e.g. the day-by-day greedy plan) warm-starts the search. On large
+    problems the time limit can stop CP-SAT before it reaches a good solution on its
+    own; starting from a valid plan lets it spend the time improving on it instead.
+    """
     if mode not in {"lexicographic", "weighted"}:
         raise ValueError("mode must be 'lexicographic' or 'weighted'")
     start = time.perf_counter()
     model, X, y, weighted_unmet, travel = _build(problem)
+    if hint is not None:
+        for (i, d), var in X.items():
+            model.add_hint(var, int(hint.stationed[i, d - 1]))
+        for (j, i, d), var in y.items():
+            model.add_hint(var, int(hint.moves[d - 1, j, i]))
     messages: list[str] = []
     stages: dict[str, str] = {}
+    bound: float | None = None  # proven lower bound on weighted unmet demand (lexicographic stage 1)
 
     if mode == "weighted":
         lam = int(round(travel_penalty_lambda * WEIGHT_SCALE))
@@ -363,9 +376,11 @@ def optimize_daily(
         if code1 in (cp_model.OPTIMAL, cp_model.FEASIBLE):
             plan = _extract(problem, solver, X, y)
             best = int(round(solver.objective_value))
+            bound = float(solver.best_objective_bound) / WEIGHT_SCALE
             model.add(weighted_unmet <= best)
             model.clear_objective()
             model.minimize(travel)
+            model.clear_hints()  # a variable may carry only one hint
             for (i, d), var in X.items():
                 model.add_hint(var, int(plan.stationed[i, d - 1]))
             for (j, i, d), var in y.items():
@@ -397,6 +412,9 @@ def optimize_daily(
         return result
     outcome = compute_daily_outcome(problem, plan)
     result.objective = {"weighted_unmet": outcome.weighted_unmet, "travel_minutes": outcome.travel_minutes}
+    if bound is not None:
+        result.diagnostics["weighted_unmet_lower_bound"] = bound
+        result.diagnostics["weighted_unmet_gap"] = max(outcome.weighted_unmet - bound, 0.0)
     if status == "FEASIBLE":
         messages.append("Solution is feasible but optimality was not proven within the time limit.")
     return result
