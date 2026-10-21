@@ -148,8 +148,9 @@ Measured results (synthetic data, mean of 5 seeds; full tables in [docs/evaluati
   is lower travel in 7/25 runs, proven optimality, and satisfying an equity floor that greedy violates.
 * **Day-by-day mode (optional):** the multi-period optimizer beats day-by-day greedy on weighted unmet
   demand in 3/25 runs with the default (flat) forecast and 11/20 runs with a weekday-varying forecast, by
-  at most 6.96 weighted requests (about 1.3%); it is never worse except where greedy violates the equity
-  floor. A real but small advantage on this synthetic data.
+  at most 6.96 weighted requests (≤ 0.4% of total demand; usually 0.4–2% of greedy's unmet, up to 17% where
+  greedy's unmet is tiny); it is never worse except where greedy violates the equity floor. A real but small
+  advantage on this synthetic data.
 
 ## Deploy (Streamlit Community Cloud, free)
 
