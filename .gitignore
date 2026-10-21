@@ -3,7 +3,6 @@ __pycache__/
 *.pyc
 .pytest_cache/
 .ruff_cache/
-.claude/
 data/generated/*
 !data/generated/.gitkeep
 .streamlit/secrets.toml
