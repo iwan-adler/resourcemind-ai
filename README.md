@@ -120,7 +120,7 @@ Deep links open a specific section and scenario, which is handy during a demo:
 ## Tests, lint, smoke test
 
 ```bash
-pytest                      # 70 tests: data, forecasting, optimizer, baselines, simulation, metrics, integration, UI
+pytest                      # 84 tests: data, forecasting, optimizer, baselines, simulation, metrics, integration, UI
 ruff check . && ruff format --check .
 python scripts/smoke_test.py
 ```

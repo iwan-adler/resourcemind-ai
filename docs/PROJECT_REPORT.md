@@ -48,11 +48,11 @@ the running app; nothing is estimated or invented.
 | Forecasting: 3 baselines + gradient boosting, chronological evaluation, empirical intervals | Done |
 | CP-SAT optimizer (lexicographic or weighted), infeasibility diagnosis | Done |
 | Baselines (current, greedy) + independent validator | Done |
-| Optional day-by-day (multi-period) planning mode | Done (merged in PR #1) |
+| Optional day-by-day (multi-period) planning mode | Done (merged in PRs #1 and #2) |
 | 4 scenario presets, Scenario Lab, coverage floor, sensitivity analysis | Done |
 | Exports: CSV, JSON run record, Markdown summary | Done |
 | Reproducible evaluation (5 seeds) with committed results | Done |
-| 81 automated tests, ruff lint/format, GitHub Actions CI (Python 3.12 + 3.13) | Done, green |
+| 84 automated tests, ruff lint/format, GitHub Actions CI (Python 3.12 + 3.13) | Done, green |
 | Documentation (README + 7 docs + this report), screenshots | Done |
 | Public GitHub repository | Done — https://github.com/iwan-adler/resourcemind-ai |
 | 11-slide pitch deck with speaker notes | Done (private until shared) |
@@ -100,7 +100,7 @@ codebase a student can understand and defend.
   visualization and UI modules, tied together by `pipeline.run_pipeline`.
 * **`scripts/`** — `generate_data.py` (CSV export), `run_evaluation.py` (multi-seed evaluation →
   `results/`), `smoke_test.py` (health check).
-* **`tests/`** — 81 pytest tests, including headless UI tests with Streamlit’s `AppTest`.
+* **`tests/`** — 84 pytest tests, including headless UI tests with Streamlit’s `AppTest`.
 * **`docs/`** — architecture, mathematical model, data dictionary, evaluation, assumptions & limitations,
   demo script, this report, and screenshots.
 * **`.github/workflows/tests.yml`** — CI on Ubuntu with Python 3.12 and 3.13.
@@ -297,6 +297,13 @@ and its results are unchanged (all 75 single-period evaluation rows identical be
 suite (81) and smoke test passed. The evaluation was re-run from scratch and reproduced the committed
 results exactly. Two summary percentages in its write-up were misstated and were corrected (see §17).
 
+**Every page follows the mode** ([PR #2](https://github.com/iwan-adler/resourcemind-ai/pull/2)). In daily
+mode the Command overview’s cards, status pills and plan summary use the daily plan; its map has a day
+slider showing that day’s moves and end-of-day positions; the Scenario Lab compares day-by-day plans; and
+the sensitivity analysis re-solves the day-by-day strategies. Reviewed (the per-day map matrix is rebuilt
+from each day’s starting positions, so it matches the stored plan; single-period paths unchanged) and
+merged after CI passed; 84 tests pass on the merged `main`.
+
 ---
 
 ## 12. Scenarios, Scenario Lab and sensitivity
@@ -434,7 +441,8 @@ service first). The service-loss model is mild by construction (45-minute limit 
 
 ## 15. Testing, linting and CI
 
-**81 pytest tests**, all passing (also verified in a fresh virtual environment):
+**84 pytest tests**, all passing locally and in CI (a clean install into a fresh virtual environment was
+also verified, at the 69-test stage):
 
 | File | Tests | Covers |
 |---|---|---|
@@ -445,14 +453,14 @@ service first). The service-loss model is mild by construction (45-minute limit 
 | `test_simulation.py` | 12 | no mutation of the dataset, reset, surge/shortage/disruption propagate, multipliers, overrides, sensitivity |
 | `test_metrics.py` | 7 | known metric values, zero/empty denominators, coverage bounds, fairness consistency, JSON export |
 | `test_integration.py` | 4 | full workflow for every preset, reproducibility, infeasible scenario path, planning basis |
-| `test_multiperiod.py` | 10 | brute force on 2-zone × 2-day cases, travel consuming service, conservation/staging/eligibility, validator, infeasible, zero cases, determinism, greedy validity and optimizer ≥ greedy, look-ahead beating myopic greedy, pipeline daily mode |
-| `test_app.py` | 7 | every page × scenario renders, disclaimer/status, Scenario Lab submit → INFEASIBLE → reset, sensitivity button, horizon control, deep links, daily mode |
+| `test_multiperiod.py` | 12 | brute force on 2-zone × 2-day cases, travel consuming service, conservation/staging/eligibility, validator, infeasible, zero cases, determinism, greedy validity and optimizer ≥ greedy, look-ahead beating myopic greedy, pipeline daily mode, per-day map matrix, daily sensitivity sweep |
+| `test_app.py` | 8 | every page × scenario renders, disclaimer/status, Scenario Lab submit → INFEASIBLE → reset, sensitivity button, horizon control, deep links, daily mode on every page, daily overview/lab/sensitivity |
 
 * **Ruff** lint and format: clean (line length 120).
 * **Smoke test** (`scripts/smoke_test.py`): optimizer OPTIMAL, plan valid, all zones forecast, optimized ≤
   current.
 * **GitHub Actions**: lint + tests + smoke test on Ubuntu, Python 3.12 and 3.13. Green on every pushed
-  commit (latest `9a0be1c`).
+  commit (latest code commit `5307951`).
 
 ---
 
@@ -497,6 +505,9 @@ service first). The service-loss model is mild by construction (45-minute limit 
   2. `f68a5ac` Add README screenshots, CI badge and deep links
   3. `0b494b2` Add optional day-by-day (multi-period) allocation mode (#1)
   4. `9a0be1c` Correct day-by-day gain percentages in docs
+  5. `ee6f76e` Add complete project report
+  6. `5307951` Make overview, scenario lab and sensitivity follow day-by-day mode (#2)
+  7. (this update) Update test counts and record PR #2
 * **Screenshots:** `docs/images/` (overview, map, planner, forecasts, strategies), real captures of the app.
 * **Pitch deck:** 11 slides with speaker notes — https://claude.ai/artifact/3BBwgiwBefjWnyrS4veocK
   (private until shared from its Share menu; exports to PowerPoint/PDF). Placeholders to fill:
@@ -512,7 +523,7 @@ python -m venv .venv
 # Windows: .venv\Scripts\activate    macOS/Linux: source .venv/bin/activate
 pip install -r requirements-dev.txt
 streamlit run app.py                    # http://localhost:8501
-pytest                                  # 81 tests
+pytest                                  # 84 tests
 ruff check . && ruff format --check .
 python scripts/smoke_test.py
 python scripts/generate_data.py         # data/generated/*.csv
