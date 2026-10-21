@@ -21,6 +21,7 @@ import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 import streamlit as st  # noqa: E402
 
+from resourcemind.allocation.counterfactual import force_move, value_of_moves  # noqa: E402
 from resourcemind.allocation.models import movements_table  # noqa: E402
 from resourcemind.allocation.multiperiod import (  # noqa: E402
     compute_daily_outcome,
@@ -43,7 +44,8 @@ from resourcemind.pipeline import (  # noqa: E402
     run_summary_markdown,
     zone_plan_table,
 )
-from resourcemind.simulation.scenarios import PRESETS, ScenarioOverrides  # noqa: E402
+from resourcemind.simulation.robustness import COVERAGE_TARGET, robustness_check  # noqa: E402
+from resourcemind.simulation.scenarios import PRESETS, ScenarioOverrides, local_response_minutes  # noqa: E402
 from resourcemind.simulation.sensitivity import PARAMETERS, sensitivity_sweep  # noqa: E402
 from resourcemind.ui import components as ui  # noqa: E402
 from resourcemind.visualization import charts  # noqa: E402
@@ -111,6 +113,28 @@ def get_sensitivity(
     return sensitivity_sweep(problem, config_from_dict(json.loads(config_json)), parameter, list(factors))
 
 
+@st.cache_data(show_spinner=False, max_entries=24)
+def get_robustness(
+    config_json: str, scenario: str, model: str, overrides_json: str, replace: bool, include_expected: bool
+):
+    result = get_result(config_json, scenario, model, overrides_json, replace)
+    return robustness_check(result, n_samples=200, seed=result.config.seed, include_expected=include_expected)
+
+
+@st.cache_data(show_spinner=False, max_entries=24)
+def get_value_of_moves(config_json: str, scenario: str, model: str, overrides_json: str, replace: bool):
+    result = get_result(config_json, scenario, model, overrides_json, replace)
+    return value_of_moves(result.problem, result.runs["optimized"].result.x, result.config)
+
+
+@st.cache_data(show_spinner=False, max_entries=64)
+def get_counterfactual(
+    config_json: str, scenario: str, model: str, overrides_json: str, replace: bool, j: int, i: int, teams: int
+):
+    result = get_result(config_json, scenario, model, overrides_json, replace)
+    return force_move(result.problem, result.runs["optimized"].result.x, j, i, teams, result.config)
+
+
 # --------------------------------------------------------------------------- state helpers
 def lab_state() -> dict | None:
     """Scenario-lab overrides (complete spec) or None when the preset is used unchanged."""
@@ -160,6 +184,23 @@ def sidebar() -> tuple[str, AppConfig, str, str]:
                 help="Day by day: teams may move every day and travel time reduces the moving team's "
                 "service that day. Affects the Allocation planner and Strategy evaluation.",
             )
+            use_standard = st.checkbox(
+                "Apply a response-time standard",
+                key="use_standard",
+                disabled=planning_mode == "daily",
+                help="Count demand as covered only if a team can reach it within the standard. Teams in a "
+                f"neighbouring zone can help when close enough. Local response inside a zone is "
+                f"{local_response_minutes(BASE_CONFIG.n_zones):.1f} min on this synthetic map. "
+                "Single-period planning only.",
+            )
+            standard = st.slider(
+                "Response-time standard (minutes)",
+                10,
+                40,
+                20,
+                key="standard",
+                disabled=not use_standard or planning_mode == "daily",
+            )
             model = st.selectbox(
                 "Forecast model",
                 ["auto", *MODEL_REGISTRY],
@@ -208,6 +249,7 @@ def sidebar() -> tuple[str, AppConfig, str, str]:
         planning_basis=basis,
         planning_mode=planning_mode,
         optimizer=optimizer,
+        response_standard_minutes=float(standard) if use_standard and planning_mode == "single" else None,
     )
     return page, cfg, scenario, model
 
@@ -281,6 +323,8 @@ def status_strip(r: PipelineResult) -> None:
     ]
     if r.daily is not None:
         parts.append(ui.pill(f"Day-by-day plan · {r.daily.problem.horizon} days", "info"))
+    if r.problem.uses_response_standard:
+        parts.append(ui.pill(f"Coverage within {r.problem.response_standard_minutes:.0f} min", "info"))
     parts.append(ui.pill("Synthetic data", "warning"))
     st.markdown(" ".join(parts), unsafe_allow_html=True)
 
@@ -728,7 +772,74 @@ def page_planner_daily(r: PipelineResult) -> None:
                     st.dataframe(pd.DataFrame([v.__dict__ for v in run.violations]), hide_index=True, width="stretch")
 
 
-def page_planner(r: PipelineResult) -> None:
+def what_if_tab(r: PipelineResult, key_args: tuple) -> None:
+    """Counterfactual explanations: re-solve with one move forbidden or forced."""
+    opt = r.runs["optimized"]
+    if opt.outcome is None or opt.violations:
+        st.info("No what-if analysis: there is no validated plan to compare against.")
+        return
+    p = r.problem
+    st.markdown(
+        "Each answer re-solves the real optimization model with one move **forbidden** or **forced**, "
+        "re-optimizes every other team, and compares the result with the recommended plan. Nothing is estimated."
+    )
+    st.markdown("**Why these moves?** What the plan would lose if each recommended move were not allowed:")
+    with st.spinner("Re-solving once per recommended move..."):
+        table = get_value_of_moves(*key_args)
+    if table.empty:
+        st.success("The plan keeps every team in place, so there is no move to explain.")
+    else:
+        st.dataframe(
+            table.drop(columns=["from_zone", "to_zone"]),
+            hide_index=True,
+            width="stretch",
+            column_config={
+                "from_name": "From",
+                "to_name": "To",
+                "teams": "Teams",
+                "weighted_unmet_if_forbidden": st.column_config.NumberColumn("Weighted unmet +", format="%.1f"),
+                "requests_lost_if_forbidden": st.column_config.NumberColumn("Requests lost", format="%.0f"),
+                "travel_change_if_forbidden": st.column_config.NumberColumn("Travel change (min)", format="%+.0f"),
+                "explanation": st.column_config.TextColumn("Explanation", width="large"),
+            },
+        )
+        st.caption(
+            "Zero cost means an equally good plan exists without that move: the recommended one is the cheapest of "
+            "several equivalent options, not the only way."
+        )
+
+    st.markdown("**Why not a different move?** Force a move and see what it would cost:")
+    labels = [f"{z} · {n}" for z, n in zip(p.zone_ids, p.zone_names, strict=True)]
+    c1, c2, c3 = st.columns([2, 2, 1])
+    j = c1.selectbox("Move teams from", range(p.n), format_func=lambda k: labels[k], key="wi_from")
+    i = c2.selectbox("To", range(p.n), index=min(1, p.n - 1), format_func=lambda k: labels[k], key="wi_to")
+    k = c3.number_input("Teams", 1, max(int(p.available.max()), 1), 1, key="wi_teams")
+    if st.button("Re-plan with this move", key="wi_run"):
+        st.session_state["what_if"] = (key_args, int(j), int(i), int(k))
+    state = st.session_state.get("what_if")
+    if state and state[0] == key_args:
+        _, j, i, k = state
+        with st.spinner("Re-solving with the move forced..."):
+            cf = get_counterfactual(*key_args, j, i, k)
+        (st.info if cf.feasible else st.warning)(f"**{cf.question}** {cf.answer}")
+        if cf.feasible and not cf.zone_changes.empty:
+            st.dataframe(
+                cf.zone_changes,
+                hide_index=True,
+                width="stretch",
+                column_config={
+                    "zone_id": "Zone",
+                    "zone_name": "Name",
+                    "teams_recommended": "Teams (plan)",
+                    "teams_counterfactual": "Teams (with move)",
+                    "served_recommended": "Served (plan)",
+                    "served_counterfactual": "Served (with move)",
+                    "served_change": st.column_config.NumberColumn("Change", format="%+d"),
+                },
+            )
+
+
+def page_planner(r: PipelineResult, key_args: tuple) -> None:
     if r.daily is not None:
         page_planner_daily(r)
         return
@@ -743,6 +854,22 @@ def page_planner(r: PipelineResult) -> None:
     )
     for m in opt.result.messages:
         st.caption(m)
+    if r.problem.uses_response_standard:
+        p = r.problem
+        cross = [
+            f"{p.zone_ids[k]}→{p.zone_ids[i]}"
+            for k in range(p.n)
+            for i in range(p.n)
+            if k != i and p.response_pairs[k, i]
+        ]
+        own = "counts" if np.diag(p.response_pairs).all() else "does NOT count (local response is slower)"
+        st.info(
+            f"**Response-time standard: {p.response_standard_minutes:.0f} min.** Demand counts as covered only when a "
+            f"team can reach it within the standard. Service inside a team's own zone {own}; teams can also cover "
+            f"{len(cross)} neighbouring-zone route(s): {', '.join(cross) if cross else 'none'}. "
+            "The greedy baseline still reasons in-zone, but every plan is scored with the same response-aware rule.",
+            icon=":material/timer:",
+        )
 
     if opt.outcome is None or opt.violations:
         infeasible_box(r)
@@ -782,7 +909,7 @@ def page_planner(r: PipelineResult) -> None:
             charts.allocation_comparison(r.problem, r.runs["current"].result.x, opt.result.x), width="stretch"
         )
 
-    tabs = st.tabs(["Zone gaps", "Movements", "Why this plan", "Constraint checks", "Map"])
+    tabs = st.tabs(["Zone gaps", "Movements", "Why this plan", "What if?", "Constraint checks", "Map"])
     with tabs[0]:
         st.dataframe(
             r.gaps.drop(columns=["inaccessible"]),
@@ -832,6 +959,8 @@ def page_planner(r: PipelineResult) -> None:
                 "(binding constraint): demand, service cap K, staging capacity M or team capacity R·X."
             )
     with tabs[3]:
+        what_if_tab(r, key_args)
+    with tabs[4]:
         st.dataframe(constraint_checks(r), hide_index=True, width="stretch")
         st.caption(
             "Checks are recomputed from the raw problem data by resourcemind.allocation.validation, "
@@ -841,7 +970,7 @@ def page_planner(r: PipelineResult) -> None:
             if run.violations:
                 with st.expander(f"{STRATEGY_LABELS[key]}: {len(run.violations)} violation(s)"):
                     st.dataframe(pd.DataFrame([v.__dict__ for v in run.violations]), hide_index=True, width="stretch")
-    with tabs[4]:
+    with tabs[5]:
         x, outcome, is_plan = plan_or_current(r)
         if not is_plan:
             st.caption("Showing the current allocation (no valid recommended plan).")
@@ -1138,6 +1267,46 @@ def page_strategies(r: PipelineResult, cfg: AppConfig, key_args: tuple) -> None:
             column_config={"coverage": st.column_config.NumberColumn(format="percent")},
         )
 
+    st.subheader("Robustness to forecast error")
+    st.markdown(
+        "A plan is fixed before demand is known. This check scores each plan against 200 demand outcomes built from "
+        "the forecast model's **real errors on the held-out test window**, keeping each day's errors together across "
+        f"zones. It shows the average coverage, a bad-week (5th percentile) value, and how often coverage falls "
+        f"below {COVERAGE_TARGET:.0%}."
+    )
+    if r.daily is not None:
+        st.caption("Uses the single-period plans (one decision for the horizon), also in day-by-day mode.")
+    include_expected = st.checkbox(
+        "Also build a plan optimized for the expected outcome over sampled demand (slower, up to ~20 s)",
+        key="rob_expected",
+    )
+    if st.button("Run robustness check", key="rob_run"):
+        st.session_state["robustness"] = (key_args, include_expected)
+    rob_state = st.session_state.get("robustness")
+    if rob_state and rob_state[0] == key_args:
+        with st.spinner("Scoring every plan on 200 demand outcomes..."):
+            rob = get_robustness(*key_args, rob_state[1])
+        st.plotly_chart(charts.robustness_chart(rob.coverage_samples, COVERAGE_TARGET), width="stretch")
+        st.dataframe(
+            rob.summary.drop(columns=["strategy"]),
+            hide_index=True,
+            width="stretch",
+            column_config={
+                "label": "Plan",
+                "mean_coverage": st.column_config.NumberColumn("Mean coverage", format="percent"),
+                "p05_coverage": st.column_config.NumberColumn("Bad week (5th pct)", format="percent"),
+                "prob_below_target": st.column_config.NumberColumn(
+                    f"P(coverage < {COVERAGE_TARGET:.0%})", format="percent"
+                ),
+                "mean_weighted_unmet": st.column_config.NumberColumn("Mean weighted unmet", format="%.1f"),
+                "p95_weighted_unmet": st.column_config.NumberColumn("Bad week weighted unmet", format="%.1f"),
+                "mean_worst_zone": st.column_config.NumberColumn("Mean worst zone", format="percent"),
+                "teams_moved": st.column_config.NumberColumn("Teams moved", format="%d"),
+            },
+        )
+        for note in rob.notes:
+            st.caption(note)
+
     st.subheader("Sensitivity analysis")
     s1, s2, s3 = st.columns([2, 2, 1])
     param = s1.selectbox("Vary", list(PARAMETERS), format_func=lambda p: PARAMETERS[p])
@@ -1263,7 +1432,7 @@ def main() -> None:
     elif page == "Demand forecasts":
         page_forecasts(result)
     elif page == "Allocation planner":
-        page_planner(result)
+        page_planner(result, key_args)
     elif page == "Scenario lab":
         page_lab(result, cfg, scenario, model)
     elif page == "Strategy evaluation":

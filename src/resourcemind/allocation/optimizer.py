@@ -40,9 +40,12 @@ _STATUS = {
 }
 
 
-def _build(problem: AllocationProblem):
+def _team_constraints(m: cp_model.CpModel, problem: AllocationProblem):
+    """Team variables x[j, i] with conservation, retention, route eligibility and staging capacity.
+
+    Returns x and, per zone, the list of incoming variables (X_i = their sum).
+    """
     n = problem.n
-    m = cp_model.CpModel()
     x: dict[tuple[int, int], cp_model.IntVar] = {}
     for j in range(n):
         for i in range(n):
@@ -53,16 +56,43 @@ def _build(problem: AllocationProblem):
         keep = min(int(problem.retain[j]), int(problem.available[j]))
         if keep > 0:
             m.add(x[j, j] >= keep)
+    incoming = []
+    for i in range(n):
+        inc = [x[j, i] for j in range(n) if (j, i) in x]
+        m.add(sum(inc) <= int(problem.staging_capacity[i]))
+        incoming.append(inc)
+    return x, incoming
+
+
+def _build(problem: AllocationProblem):
+    n = problem.n
+    m = cp_model.CpModel()
+    x, incoming_all = _team_constraints(m, problem)
+    R = int(problem.service_per_team)
+    flows: dict[tuple[int, int], cp_model.IntVar] = {}
+    if problem.uses_response_standard:
+        # Service within the response standard: teams based in k serve reachable zones i,
+        # sharing their capacity R * X_k (see allocation/response.py).
+        for k in range(n):
+            for i in range(n):
+                if problem.response_pairs[k, i] and problem.servable[i] > 0:
+                    flows[k, i] = m.new_int_var(0, int(problem.servable[i]), f"f_{k}_{i}")
+        for k in range(n):
+            out = [v for (kk, _), v in flows.items() if kk == k]
+            if out:
+                m.add(sum(out) <= R * sum(incoming_all[k]))
     S, U = [], []
     for i in range(n):
-        incoming = [x[j, i] for j in range(n) if (j, i) in x]
-        m.add(sum(incoming) <= int(problem.staging_capacity[i]))
+        incoming = incoming_all[i]
         s = m.new_int_var(
             int(problem.floor_requirement[i]) if problem.coverage_floor > 0 else 0,
             int(problem.servable[i]),
             f"S_{i}",
         )
-        m.add(s <= int(problem.service_per_team) * sum(incoming))
+        if problem.uses_response_standard:
+            m.add(s <= sum(v for (_, ii), v in flows.items() if ii == i))
+        else:
+            m.add(s <= R * sum(incoming))
         u = m.new_int_var(0, int(problem.demand[i]), f"U_{i}")
         m.add(u == int(problem.demand[i]) - s)
         S.append(s)
@@ -163,13 +193,27 @@ def optimize_allocation(
     time_limit_seconds: float = 10.0,
     num_workers: int = 1,
     seed: int = 0,
+    move_bounds: dict[tuple[int, int], tuple[int, int]] | None = None,
 ) -> AllocationResult:
+    """Solve the allocation problem.
+
+    ``move_bounds`` optionally pins individual moves for counterfactual questions:
+    {(j, i): (lo, hi)} requires lo <= x[j, i] <= hi (j = origin, i = destination).
+    A bound with lo > 0 on an ineligible route makes the model infeasible.
+    """
     if mode not in {"lexicographic", "weighted"}:
         raise ValueError("mode must be 'lexicographic' or 'weighted'")
     start = time.perf_counter()
     model, x, weighted_unmet, travel = _build(problem)
+    for (j, i), (lo, hi) in (move_bounds or {}).items():
+        if (j, i) in x:
+            model.add(x[j, i] >= int(lo))
+            model.add(x[j, i] <= int(hi))
+        elif lo > 0:
+            model.add_bool_or([])  # forcing a move on an ineligible route: infeasible by definition
     messages: list[str] = []
     stages: dict[str, str] = {}
+    bound: float | None = None  # proven lower bound on weighted unmet demand (lexicographic stage 1)
 
     if mode == "weighted":
         lam = int(round(travel_penalty_lambda * WEIGHT_SCALE))
@@ -191,6 +235,7 @@ def optimize_allocation(
         if code1 in (cp_model.OPTIMAL, cp_model.FEASIBLE):
             solution = _extract(problem, solver, x)
             best = int(round(solver.objective_value))
+            bound = float(solver.best_objective_bound) / WEIGHT_SCALE
             # Stage 2: keep stage-1 performance, minimise travel.
             model.add(weighted_unmet <= best)
             model.clear_objective()
@@ -229,6 +274,83 @@ def optimize_allocation(
         "weighted_unmet": outcome.weighted_unmet,
         "travel_minutes": outcome.travel_minutes,
     }
+    if bound is not None:
+        result.diagnostics["weighted_unmet_lower_bound"] = bound
+        result.diagnostics["weighted_unmet_gap"] = max(outcome.weighted_unmet - bound, 0.0)
     if status == "FEASIBLE":
         messages.append("Solution is feasible but optimality was not proven within the time limit.")
     return result
+
+
+def optimize_expected(
+    problem: AllocationProblem,
+    demand_samples: np.ndarray,
+    time_limit_seconds: float = 10.0,
+    num_workers: int = 1,
+    seed: int = 0,
+) -> AllocationResult:
+    """One plan that minimises EXPECTED weighted unmet demand over sampled demand outcomes.
+
+    Sample average approximation: the team constraints are the usual ones, and each
+    sample s gets its own service variables S[s, i] <= min(D[s, i], K_i, R * X_i).
+    Stage 1 minimises sum_s sum_i w_i (D[s, i] - S[s, i]); stage 2 minimises travel
+    at that optimum. The equity floor is not applied here. ``problem.demand`` is not
+    used; the plan is scored by the caller on independent samples.
+    """
+    if problem.uses_response_standard:
+        raise NotImplementedError("optimize_expected supports the in-zone service model only")
+    samples = np.maximum(np.asarray(demand_samples, dtype=int), 0)
+    if samples.ndim != 2 or samples.shape[1] != problem.n or len(samples) == 0:
+        raise ValueError("demand_samples must have shape (n_samples, n_zones)")
+    start = time.perf_counter()
+    m = cp_model.CpModel()
+    x, incoming = _team_constraints(m, problem)
+    w_int = [int(round(float(w) * WEIGHT_SCALE)) for w in problem.weights]
+    R = int(problem.service_per_team)
+    served_terms = []
+    for s, row in enumerate(samples):
+        for i in range(problem.n):
+            cap = int(min(row[i], problem.service_cap[i]))
+            sv = m.new_int_var(0, cap, f"S_{s}_{i}")
+            m.add(sv <= R * sum(incoming[i]))
+            served_terms.append(w_int[i] * sv)
+    total_weighted_demand = int(sum(w_int[i] * int(samples[:, i].sum()) for i in range(problem.n)))
+    weighted_unmet = total_weighted_demand - sum(served_terms)
+    travel = sum(int(problem.travel[j, i]) * v for (j, i), v in x.items() if i != j)
+
+    stages: dict[str, str] = {}
+    messages: list[str] = []
+    m.minimize(weighted_unmet)
+    solver = _solver(time_limit_seconds, num_workers, seed)
+    code1 = solver.solve(m)
+    stages["1_expected_weighted_unmet"] = _STATUS[code1]
+    status, solution = _STATUS[code1], None
+    if code1 in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+        solution = _extract(problem, solver, x)
+        m.add(weighted_unmet <= int(round(solver.objective_value)))
+        m.clear_objective()
+        m.minimize(travel)
+        for (j, i), var in x.items():
+            m.add_hint(var, int(solution[j, i]))
+        solver2 = _solver(time_limit_seconds, num_workers, seed)
+        code2 = solver2.solve(m)
+        stages["2_travel_minutes"] = _STATUS[code2]
+        if code2 in (cp_model.OPTIMAL, cp_model.FEASIBLE):
+            solution = _extract(problem, solver2, x)
+            status = "OPTIMAL" if (code1 == cp_model.OPTIMAL and code2 == cp_model.OPTIMAL) else "FEASIBLE"
+        else:
+            status = "FEASIBLE"
+            messages.append("Travel-minimisation stage found no solution in time; stage-1 plan kept.")
+    if solution is None:
+        messages.append(f"Solver returned {status}: no plan was produced.")
+    elif status == "FEASIBLE":
+        messages.append("Solution is feasible but optimality was not proven within the time limit.")
+    return AllocationResult(
+        strategy="optimized_expected",
+        status=status,
+        x=solution,
+        runtime_seconds=time.perf_counter() - start,
+        messages=messages,
+        stage_statuses=stages,
+        diagnostics={"n_samples": int(len(samples))},
+    )

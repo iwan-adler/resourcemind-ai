@@ -164,8 +164,7 @@ requests are the floor of the fractional capacity, which is exactly how the shar
 ### Objective
 
 Lexicographic as before: (1) minimise $\sum_d \sum_i w_i U_{id}$; (2) at that optimum, minimise
-$\sum_d \sum_{j
-e i} T_{ji}\, y_{jid}$ (team-minutes). The weighted-sum objective is also available.
+$\sum_d \sum_{j \neq i} T_{ji}\, y_{jid}$ (team-minutes). The weighted-sum objective is also available.
 Same solver settings (CP-SAT, one worker, fixed seed, `linearization_level = 2`) and the same status
 semantics; infeasibility reasons reuse the single-period diagnosis (the static constraints of day 1 are
 identical) plus a note when a per-day coverage floor is active.
@@ -187,3 +186,73 @@ identical) plus a note when a per-day coverage floor is active.
 * Teams arrive within the day they move; there are no multi-day trips, crew hours or rest rules.
 * Demand on a day is served only that day (no backlog carried over).
 * The plan reacts to the forecast, not to realised demand; it is not re-optimised on a rolling basis.
+
+**Warm start and guarantee.** In the app and the evaluation, the day-by-day optimizer is warm-started
+from the day-by-day greedy plan. CP-SAT does not always follow a hint within its time limit, so if the
+solver's stage-1 plan is worse than the warm-start plan, and that plan passes the independent validator,
+the warm-start plan is kept (stage `1_source = warm start kept`, status FEASIBLE, with a message) and only
+travel is optimised further. The day-by-day result is therefore never worse than greedy.
+
+## Response-time standard (optional)
+
+Off by default (`response_standard_minutes = None`); single-period planning only. With a standard
+$\tau$ minutes, demand counts as covered only when a team can reach it within $\tau$:
+
+* $P_{ki} = 1$ when a team based in zone $k$ reaches zone $i$ within $\tau$: for $k \neq i$ when
+  $T_{ki} \le \tau$ and the route is not blocked; for $k = i$ when the zone's local response time
+  $\rho \le \tau$.
+* $\rho$ is synthetic: zones share the map evenly, so each covers a square of side
+  $s = \sqrt{\text{map area}/n}$; the mean distance from a random point to the centre is about $0.38\,s$,
+  converted with the same overhead, road factor and speed as the travel matrix. On the demo map
+  $\rho \approx 11.1$ min, so any standard below that covers nothing.
+
+New variables $f_{ki} \ge 0$ (requests in zone $i$ served by teams based in $k$, only where $P_{ki}=1$):
+
+$$\sum_i f_{ki} \le R \cdot X_k \qquad \text{(a base's teams share their capacity)}$$
+$$S_i \le \sum_k f_{ki}, \quad S_i \le \min(D_i, K_i)$$
+
+replacing $S_i \le R \cdot X_i$. The team constraints and the objective are unchanged. With
+$P = I$ (only the own zone counts) this is exactly the default model.
+
+**Scoring.** Given fixed positions $X$, the shared outcome function computes the best service within the
+standard: the maximum-weight assignment of the same flows, solved exactly with CP-SAT
+(`allocation/response.py`). Every strategy is scored this way. The greedy baseline still *chooses* moves
+with its in-zone rule, so under a standard it is a simpler heuristic than the model it is scored with.
+
+## Robustness check
+
+Plans are fixed before demand is known. For each fixed plan, `simulation/robustness.py` computes service
+under $N = 200$ demand outcomes
+
+$$\tilde D_i = \text{round}\big(\hat D_i \cdot m_i \cdot (1 + e_i)\big)$$
+
+where $\hat D_i$ is the horizon forecast, $m_i$ the stress multiplier and $e$ one resampled forecast
+window of relative horizon-total errors (all zones from the same window, so city-wide errors stay
+correlated). Errors used to **score** plans come from the held-out **test** window; errors used to
+**build** a plan come only from the **validation** window. Reported per plan: mean coverage, 5th
+percentile coverage, $P(\text{coverage} < 90\%)$, mean and 95th percentile weighted unmet demand, mean
+worst-zone coverage.
+
+**Expected-outcome plan (optional).** Sample average approximation over $S = 40$ validation samples:
+the usual team constraints, per-sample service $S_{si} \le \min(\tilde D_{si}, K_i)$,
+$S_{si} \le R X_i$, stage 1 minimises $\sum_s \sum_i w_i(\tilde D_{si} - S_{si})$, stage 2 minimises
+travel. In-zone model only.
+
+## Counterfactual explanations
+
+`allocation/counterfactual.py` re-solves the same lexicographic model with one extra bound on a single
+move, then compares the result with the recommended plan using the shared outcome function:
+
+* **Force** $x_{AB} \ge k$: "why not move $k$ teams from A to B?" (refused up front, with the reason, if
+  the route is ineligible or A cannot release $k$ teams).
+* **Forbid** $x_{AB} = 0$: "why does the plan move teams from A to B?" A zero cost means an equally good
+  plan exists without that move.
+
+Because the recommended plan is optimal, a forced or forbidden move can never improve weighted unmet
+demand; the reported deltas show exactly what it would cost.
+
+## Optimality gap
+
+For every lexicographic solve the optimizers record CP-SAT's proven lower bound on weighted unmet
+demand (`weighted_unmet_lower_bound`) and the gap between the plan and that bound
+(`weighted_unmet_gap`). A FEASIBLE plan is at most that far from optimal.

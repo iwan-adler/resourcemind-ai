@@ -7,9 +7,11 @@ Writes:
   results/forecast_metrics.csv      held-out test metrics per seed and model
   results/strategy_comparison.csv   allocation metrics per seed, case, strategy
   results/summary_by_scenario.csv   mean over seeds per case and strategy
+  results/robustness.csv            plans scored on held-out forecast errors (single-period presets)
 
 Cases ending in "_daily" use the day-by-day (multi-period) planning mode on the
-same scenario; the others use the default single-period mode.
+same scenario; "_response20" cases apply a 20-minute response-time standard; the
+others use the default single-period, in-zone mode.
 """
 
 import argparse
@@ -26,6 +28,7 @@ from resourcemind.config import RESULTS_DIR, load_config
 from resourcemind.data.generate import generate_dataset
 from resourcemind.forecasting.evaluation import evaluate_forecasters
 from resourcemind.pipeline import PipelineSettings, run_pipeline
+from resourcemind.simulation.robustness import robustness_check
 from resourcemind.simulation.scenarios import PRESETS, ScenarioOverrides
 
 # (case, preset, overrides, planning_mode, forecast model). Extra case: the shortage
@@ -37,10 +40,12 @@ from resourcemind.simulation.scenarios import PRESETS, ScenarioOverrides
 _BASE_CASES = [(k, k, ScenarioOverrides()) for k in PRESETS] + [
     ("shortage_floor30", "shortage", ScenarioOverrides(coverage_floor=0.3))
 ]
+# The "_response20" cases count demand as covered only within a 20-minute response standard.
 CASES = (
-    [(c, p, o, "single", "auto") for c, p, o in _BASE_CASES]
-    + [(f"{c}_daily", p, o, "daily", "auto") for c, p, o in _BASE_CASES]
-    + [(f"{k}_daily_seasonal", k, ScenarioOverrides(), "daily", "seasonal_average_3w") for k in PRESETS]
+    [(c, p, o, "single", "auto", None) for c, p, o in _BASE_CASES]
+    + [(f"{c}_daily", p, o, "daily", "auto", None) for c, p, o in _BASE_CASES]
+    + [(f"{k}_daily_seasonal", k, ScenarioOverrides(), "daily", "seasonal_average_3w", None) for k in PRESETS]
+    + [(f"{k}_response20", k, ScenarioOverrides(), "single", "auto", 20.0) for k in PRESETS]
 )
 SUMMARY_COLUMNS = [
     "total_unmet",
@@ -63,7 +68,7 @@ def main() -> None:
     out.mkdir(parents=True, exist_ok=True)
     base = load_config()
 
-    forecast_rows, strategy_rows, runs = [], [], []
+    forecast_rows, strategy_rows, runs, robust_rows = [], [], [], []
     started = time.perf_counter()
     for seed in args.seeds:
         config = base.with_updates(seed=seed)
@@ -82,10 +87,10 @@ def main() -> None:
                     "test_interval_coverage": fe.test_interval_coverage[rec["model"]],
                 }
             )
-        for case, preset, overrides, mode, model in CASES:
+        for case, preset, overrides, mode, model, standard in CASES:
             t = time.perf_counter()
             result = run_pipeline(
-                config.with_updates(planning_mode=mode),
+                config.with_updates(planning_mode=mode, response_standard_minutes=standard),
                 PipelineSettings(scenario=preset, model=model, overrides=overrides),
                 dataset=dataset,
                 forecast_eval=fe,
@@ -97,11 +102,16 @@ def main() -> None:
                         "seed": seed,
                         "case": case,
                         "planning_mode": mode,
+                        "response_standard_minutes": standard,
                         "forecast_model": result.forecast.model,
                         "end_to_end_seconds": end_to_end,
                         **rec,
                     }
                 )
+            if mode == "single" and case in PRESETS:
+                rob = robustness_check(result, n_samples=200, seed=seed, include_expected=True)
+                for rec in rob.summary.to_dict(orient="records"):
+                    robust_rows.append({"seed": seed, "case": case, "notes": " | ".join(rob.notes), **rec})
             opt = result.daily.runs["optimized"].result if result.daily is not None else result.runs["optimized"].result
             runs.append(
                 {
@@ -161,6 +171,10 @@ def main() -> None:
     forecast_df.to_csv(out / "forecast_metrics.csv", index=False)
     strategy_df.to_csv(out / "strategy_comparison.csv", index=False)
     summary.to_csv(out / "summary_by_scenario.csv", index=False)
+    robust_df = pd.DataFrame(robust_rows)
+    robust_df.to_csv(out / "robustness.csv", index=False)
+    robust_cols = ["mean_coverage", "p05_coverage", "prob_below_target", "mean_weighted_unmet", "mean_worst_zone"]
+    robust_summary = robust_df.groupby(["case", "strategy"], sort=False)[robust_cols].mean().reset_index()
     record = {
         "created_at_utc": datetime.now(UTC).isoformat(timespec="seconds"),
         "data_provenance": "synthetic",
@@ -171,6 +185,7 @@ def main() -> None:
         "allocation_mean_over_seeds": summary.replace({np.nan: None}).to_dict(orient="records"),
         "optimizer_status_counts": status_counts.to_dict(orient="records"),
         "optimizer_vs_greedy": head_to_head.to_dict(orient="records"),
+        "robustness_mean_over_seeds": robust_summary.to_dict(orient="records"),
         "runs": runs,
         "total_runtime_seconds": time.perf_counter() - started,
     }
@@ -184,6 +199,8 @@ def main() -> None:
     print(summary.round(3).to_string(index=False))
     print("\nOptimizer vs greedy (weighted unmet demand, per run):")
     print(head_to_head.round(3).to_string(index=False))
+    print("\nRobustness on held-out forecast errors (mean over seeds):")
+    print(robust_summary.round(3).to_string(index=False))
     print("\nOptimizer status counts:")
     print(status_counts.to_string(index=False))
     print(f"\nWrote results to {out.resolve()} in {record['total_runtime_seconds']:.1f}s")
