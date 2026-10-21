@@ -460,7 +460,7 @@ also verified, at the 69-test stage):
 * **Smoke test** (`scripts/smoke_test.py`): optimizer OPTIMAL, plan valid, all zones forecast, optimized ≤
   current.
 * **GitHub Actions**: lint + tests + smoke test on Ubuntu, Python 3.12 and 3.13. Green on every pushed
-  commit (latest code commit `5307951`).
+  commit (latest code commit `2e0f92b`).
 
 ---
 
@@ -501,18 +501,19 @@ also verified, at the 69-test stage):
 
 * **Repository:** https://github.com/iwan-adler/resourcemind-ai (public, MIT licence).
 * **Commit history on `main`:**
-  1. `2538b9c` Build ResourceMind AI decision-support prototype
-  2. `f68a5ac` Add README screenshots, CI badge and deep links
-  3. `0b494b2` Add optional day-by-day (multi-period) allocation mode (#1)
-  4. `9a0be1c` Correct day-by-day gain percentages in docs
-  5. `ee6f76e` Add complete project report
-  6. `5307951` Make overview, scenario lab and sensitivity follow day-by-day mode (#2)
-  7. (this update) Update test counts and record PR #2
+  1. `9d663f9` Build ResourceMind AI decision-support prototype
+  2. `21ea398` Add README screenshots, CI badge and deep links
+  3. `a00ec9b` Add optional day-by-day (multi-period) allocation mode (#1)
+  4. `7b7e328` Correct day-by-day gain percentages in docs
+  5. `5cc68d3` Add complete project report
+  6. `2e0f92b` Make overview, scenario lab and sensitivity follow day-by-day mode (#2)
+  7. `10c3e35` Update test counts and record PR #2 in the report
 * **Screenshots:** `docs/images/` (overview, map, planner, forecasts, strategies), real captures of the app.
-* **Pitch deck:** 11 slides with speaker notes — https://claude.ai/artifact/3BBwgiwBefjWnyrS4veocK
-  (private until shared from its Share menu; exports to PowerPoint/PDF). Placeholders to fill:
+* **Pitch deck:** 11 slides with speaker notes, shared separately (exports to PowerPoint/PDF).
+  Placeholders to fill:
   `[Team name]` on the cover and `[Streamlit URL]` on the closing slide.
 * **Demo script:** `docs/demo_script.md`.
+* **Judge Q&A preparation:** `docs/judge_qa.md` (18 likely questions with short answers, plus key numbers).
 
 ---
 
