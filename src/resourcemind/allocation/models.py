@@ -3,8 +3,7 @@
 Index convention: ``x[j, i]`` = number of teams whose origin is zone j and that
 are stationed in zone i for the planning horizon (``x[j, j]`` = teams staying).
 
-All strategies (current, greedy, optimised) are scored with ``compute_outcome``
-so they are compared on identical rules.
+All strategies are scored with ``compute_outcome``.
 """
 
 from __future__ import annotations

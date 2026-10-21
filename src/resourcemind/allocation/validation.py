@@ -1,7 +1,7 @@
 """Independent validation of any allocation matrix or day-by-day plan.
 
-This module does NOT trust the solver: it re-checks every hard constraint from
-the raw problem data. Optimiser and baseline outputs pass through the same checks.
+Every hard constraint is re-checked from the problem data rather than taken from
+the solver. Optimizer and baseline outputs go through the same checks.
 """
 
 from __future__ import annotations

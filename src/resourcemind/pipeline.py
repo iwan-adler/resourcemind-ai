@@ -1,7 +1,6 @@
 """End-to-end workflow: data -> scenario -> forecast -> gaps -> allocation -> evaluation.
 
-Used by the Streamlit app, the evaluation command and the integration tests, so
-every surface runs exactly the same computation.
+Shared by the Streamlit app, the evaluation script and the integration tests.
 """
 
 from __future__ import annotations

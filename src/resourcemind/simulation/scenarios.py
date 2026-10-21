@@ -2,10 +2,10 @@
 
 Data layers are kept separate:
 * historical demand  - the generated dataset (never modified in place)
-* scenario history   - a COPY of the history with preset changes (e.g. a recent surge)
+* scenario history   - a copy of the history with preset changes (e.g. a recent surge)
                        that the forecasting models actually train on
 * forecast demand    - model output from the scenario history
-* adjusted demand    - forecast x explicit stress multipliers (labelled as a stress test)
+* adjusted demand    - forecast x stress multipliers
 
 Overrides are stored separately from the dataset; ``ScenarioOverrides()`` is the
 reset-to-default state.

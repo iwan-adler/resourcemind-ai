@@ -4,8 +4,8 @@ Start: `streamlit run app.py`, then open http://localhost:8501. The first load t
 evaluation); later interactions are cached.
 
 1. **Command overview — normal operations (45 s).**
-   Point out the synthetic-data banner and status pills (`Solver: OPTIMAL`, *Constraints verified
-   independently*). Read the cards: about 2,226 requests forecast for 7 days, 32 teams. Moving 3 teams raises
+   Point out the synthetic-data banner and status pills (`Solver: OPTIMAL`, *Constraints
+   validated*). Read the cards: about 2,226 requests forecast for 7 days, 32 teams. Moving 3 teams raises
    coverage from 89.1% to 96.2% and cuts weighted unmet demand from 361.9 to 123.0. Scroll to the map and
    toggle *Current allocation* ↔ *Recommended plan*; open the accessible table.
 2. **Demand forecasts (45 s).** Select Eastfield (Z05). Show the forecast band, then the *Model evaluation*

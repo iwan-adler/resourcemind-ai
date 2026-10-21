@@ -1,7 +1,7 @@
-"""Plotly figures. Pure functions of computed results (no computation of their own).
+"""Plotly figures built from pipeline results.
 
-Status is always encoded redundantly: colour + marker shape + text label.
-The map is a schematic km grid drawn offline (no map tiles, no network).
+Status uses colour, marker shape and a text label. The map is a schematic km grid
+(no map tiles).
 """
 
 from __future__ import annotations

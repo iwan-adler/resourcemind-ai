@@ -1,24 +1,19 @@
 """Robustness of allocation plans to forecast error (single-period plans).
 
-A plan is made BEFORE demand is known. This module asks how each fixed plan would
-have performed across many plausible demand outcomes:
+Each fixed plan is evaluated on sampled demand outcomes
 
-    realised_i = round(forecast_i x stress_i x (1 + e_i)),   e = resampled forecast errors
+    realised_i = round(forecast_i x stress_i x (1 + e_i))
 
-The errors come from the forecasting model's own relative errors on horizon
-totals. Each sample takes one whole forecast window, i.e. the errors of every zone
-from the same day, so errors that hit many zones at once stay correlated.
+where e is one resampled forecast window of the model's relative horizon-total
+errors (all zones from the same window, so cross-zone correlation is kept).
 
-Out-of-sample by construction:
-* plans that USE errors (the expected-outcome plan) are built from VALIDATION-window
-  errors only;
-* every plan is SCORED on errors from the held-out TEST window, which no plan saw.
-Each window holds about 20 complete forecast windows, so samples repeat them; this
-measures behaviour under errors the model actually made, not a full probability model.
+Plans are scored on held-out test-window errors. The optional expected-outcome plan
+is built from validation-window errors only. Each window set has about 20 complete
+forecast windows, so samples repeat.
 
-Strategies compared on the same samples: current allocation, greedy, the optimized
-plan for the point forecast, the optimized plan for the upper empirical interval
-("cautious"), and the optimized plan for the EXPECTED outcome over sampled demand.
+Plans compared: current allocation, greedy, optimized for the point forecast,
+optimized for the upper empirical interval, and optionally optimized for the
+expected outcome over sampled demand.
 """
 
 from __future__ import annotations
