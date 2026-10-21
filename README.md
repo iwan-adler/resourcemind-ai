@@ -33,8 +33,8 @@ leaves some zones under-served while others have spare capacity. The tool:
 |---|---|
 | Data | Deterministic synthetic generator (10 zones × 240 days, 3 demand categories, weekly/annual seasonality, spikes, city-wide events), schema validation |
 | Forecasting | Seasonal naive, seasonal average, 28-day moving average and a gradient-boosting model; chronological train/validation/test; MAE/RMSE/WAPE; empirical intervals with measured coverage |
-| Allocation | CP-SAT integer model with conservation, staging capacity, service caps, travel limits, blocked routes, inaccessible zones, minimum retention and an optional equity floor; lexicographic or weighted objective; infeasibility diagnosis |
-| Baselines | Current allocation and a transparent greedy heuristic, scored with the same function |
+| Allocation | CP-SAT integer model with conservation, staging capacity, service caps, travel limits, blocked routes, inaccessible zones, minimum retention and an optional equity floor; lexicographic or weighted objective; infeasibility diagnosis. Optional day-by-day mode: teams move daily and travel time reduces that day's service |
+| Baselines | Current allocation and a transparent greedy heuristic (applied day by day in daily mode), scored with the same function |
 | Validation | Independent re-check of every hard constraint for every strategy |
 | Scenarios | 4 presets plus a Scenario Lab (demand stress, resources, service rate, staging, priorities, travel, blocked routes, access, coverage floor) with reset |
 | Analysis | Strategy comparison, fairness by zone and tier, sensitivity sweeps |
@@ -143,9 +143,13 @@ Measured results (synthetic data, mean of 5 seeds; full tables in [docs/evaluati
 * **Forecasting (test MAE, requests/day):** gradient boosting 4.65, 28-day moving average 4.69, seasonal
   average 5.01, seasonal naive 6.23. The two best are effectively tied; neither is claimed superior.
 * **Allocation:** in the normal scenario, rebalancing cuts weighted unmet demand from 118.5 (current) to
-  24.6 and raises coverage from 96.0% to 99.2%. The optimizer was OPTIMAL in 25/25 runs (≤ 0.1 s).
+  24.6 and raises coverage from 96.0% to 99.2%. The optimizer was OPTIMAL in 25/25 runs (≤ 0.15 s).
   **Greedy matched the optimizer's weighted unmet demand in all 25 runs.** The optimizer's added value here
   is lower travel in 7/25 runs, proven optimality, and satisfying an equity floor that greedy violates.
+* **Day-by-day mode (optional):** the multi-period optimizer beats day-by-day greedy on weighted unmet
+  demand in 3/25 runs with the default (flat) forecast and 11/20 runs with a weekday-varying forecast, by
+  at most 6.96 weighted requests (about 1.3%); it is never worse except where greedy violates the equity
+  floor. A real but small advantage on this synthetic data.
 
 ## Deploy (Streamlit Community Cloud, free)
 

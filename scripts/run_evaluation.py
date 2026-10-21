@@ -7,6 +7,9 @@ Writes:
   results/forecast_metrics.csv      held-out test metrics per seed and model
   results/strategy_comparison.csv   allocation metrics per seed, case, strategy
   results/summary_by_scenario.csv   mean over seeds per case and strategy
+
+Cases ending in "_daily" use the day-by-day (multi-period) planning mode on the
+same scenario; the others use the default single-period mode.
 """
 
 import argparse
@@ -25,10 +28,20 @@ from resourcemind.forecasting.evaluation import evaluate_forecasters
 from resourcemind.pipeline import PipelineSettings, run_pipeline
 from resourcemind.simulation.scenarios import PRESETS, ScenarioOverrides
 
-# Extra evaluation case: the shortage preset with a 30% per-zone coverage floor.
-CASES = [(k, k, ScenarioOverrides()) for k in PRESETS] + [
+# (case, preset, overrides, planning_mode, forecast model). Extra case: the shortage
+# preset with a 30% per-zone coverage floor. Every case runs in both planning modes
+# with the auto-selected forecast. The auto choice is usually the 28-day moving
+# average, whose daily forecast is flat, so the "_daily_seasonal" cases repeat the
+# presets with the weekday-varying 3-week seasonal average to test whether the
+# day-by-day model gains when demand changes from day to day.
+_BASE_CASES = [(k, k, ScenarioOverrides()) for k in PRESETS] + [
     ("shortage_floor30", "shortage", ScenarioOverrides(coverage_floor=0.3))
 ]
+CASES = (
+    [(c, p, o, "single", "auto") for c, p, o in _BASE_CASES]
+    + [(f"{c}_daily", p, o, "daily", "auto") for c, p, o in _BASE_CASES]
+    + [(f"{k}_daily_seasonal", k, ScenarioOverrides(), "daily", "seasonal_average_3w") for k in PRESETS]
+)
 SUMMARY_COLUMNS = [
     "total_unmet",
     "weighted_unmet",
@@ -69,30 +82,32 @@ def main() -> None:
                     "test_interval_coverage": fe.test_interval_coverage[rec["model"]],
                 }
             )
-        for case, preset, overrides in CASES:
+        for case, preset, overrides, mode, model in CASES:
             t = time.perf_counter()
             result = run_pipeline(
-                config,
-                PipelineSettings(scenario=preset, overrides=overrides),
+                config.with_updates(planning_mode=mode),
+                PipelineSettings(scenario=preset, model=model, overrides=overrides),
                 dataset=dataset,
                 forecast_eval=fe,
             )
             end_to_end = time.perf_counter() - t
-            for rec in result.comparison.to_dict(orient="records"):
+            for rec in result.active_comparison.to_dict(orient="records"):
                 strategy_rows.append(
                     {
                         "seed": seed,
                         "case": case,
+                        "planning_mode": mode,
                         "forecast_model": result.forecast.model,
                         "end_to_end_seconds": end_to_end,
                         **rec,
                     }
                 )
-            opt = result.runs["optimized"].result
+            opt = result.daily.runs["optimized"].result if result.daily is not None else result.runs["optimized"].result
             runs.append(
                 {
                     "seed": seed,
                     "case": case,
+                    "planning_mode": mode,
                     "forecast_evaluation_seconds": fe_runtime,
                     "end_to_end_seconds_excluding_forecast_eval": end_to_end,
                     "changes": result.inputs.changes,
@@ -113,6 +128,35 @@ def main() -> None:
         .rename("runs")
         .reset_index()
     )
+    # Head-to-head per run: does the optimizer beat greedy on weighted unmet demand / travel?
+    wide = strategy_df.pivot_table(
+        index=["case", "seed"], columns="strategy", values=["weighted_unmet", "travel_minutes"]
+    )
+    diff = wide["weighted_unmet"]["optimized"] - wide["weighted_unmet"]["greedy"]
+    tdiff = wide["travel_minutes"]["optimized"] - wide["travel_minutes"]["greedy"]
+    head_to_head = (
+        pd.DataFrame(
+            {
+                "optimizer_better": diff < -1e-9,
+                "tie": diff.abs() <= 1e-9,
+                "optimizer_worse": diff > 1e-9,
+                "weighted_unmet_gap": -diff,
+                "tie_and_less_travel": (diff.abs() <= 1e-9) & (tdiff < -1e-9),
+            }
+        )
+        .groupby(level="case", sort=False)
+        .agg(
+            runs=("tie", "size"),
+            optimizer_better=("optimizer_better", "sum"),
+            tie=("tie", "sum"),
+            optimizer_worse=("optimizer_worse", "sum"),
+            tie_and_less_travel=("tie_and_less_travel", "sum"),
+            mean_weighted_unmet_gap=("weighted_unmet_gap", "mean"),
+            max_weighted_unmet_gap=("weighted_unmet_gap", "max"),
+        )
+        .reindex([c for c, *_ in CASES])
+        .reset_index()
+    )
 
     forecast_df.to_csv(out / "forecast_metrics.csv", index=False)
     strategy_df.to_csv(out / "strategy_comparison.csv", index=False)
@@ -126,6 +170,7 @@ def main() -> None:
         "forecast_model_selected_on_validation": selected_counts,
         "allocation_mean_over_seeds": summary.replace({np.nan: None}).to_dict(orient="records"),
         "optimizer_status_counts": status_counts.to_dict(orient="records"),
+        "optimizer_vs_greedy": head_to_head.to_dict(orient="records"),
         "runs": runs,
         "total_runtime_seconds": time.perf_counter() - started,
     }
@@ -137,6 +182,8 @@ def main() -> None:
     print("Model selected on validation:", selected_counts)
     print("\nAllocation (mean over seeds):")
     print(summary.round(3).to_string(index=False))
+    print("\nOptimizer vs greedy (weighted unmet demand, per run):")
+    print(head_to_head.round(3).to_string(index=False))
     print("\nOptimizer status counts:")
     print(status_counts.to_string(index=False))
     print(f"\nWrote results to {out.resolve()} in {record['total_runtime_seconds']:.1f}s")

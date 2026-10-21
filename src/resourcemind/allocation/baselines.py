@@ -7,6 +7,7 @@ import time
 import numpy as np
 
 from resourcemind.allocation.models import AllocationProblem, AllocationResult
+from resourcemind.allocation.multiperiod import DailyPlan, DailyResult, MultiPeriodProblem
 
 
 def current_allocation(problem: AllocationProblem) -> AllocationResult:
@@ -97,6 +98,48 @@ def greedy_allocation(problem: AllocationProblem) -> AllocationResult:
         strategy="greedy",
         status="HEURISTIC",
         x=x,
+        runtime_seconds=time.perf_counter() - start,
+        messages=messages,
+    )
+
+
+def current_daily(problem: MultiPeriodProblem) -> DailyResult:
+    """Keep every team where it is today, every day."""
+    start = time.perf_counter()
+    plan = DailyPlan.from_moves(problem.available, np.zeros((problem.horizon, problem.n, problem.n), dtype=int))
+    return DailyResult(
+        strategy="current",
+        status="BASELINE",
+        plan=plan,
+        runtime_seconds=time.perf_counter() - start,
+        messages=["No teams moved on any day (status quo)."],
+    )
+
+
+def greedy_daily(problem: MultiPeriodProblem) -> DailyResult:
+    """The single-period greedy rule applied myopically, one day at a time.
+
+    Day d starts from the positions at the end of day d-1 and runs
+    ``greedy_allocation`` against that day's demand only (no look-ahead). The
+    greedy rule does not see the service lost while travelling; the shared
+    outcome function charges it afterwards, exactly as for the optimizer.
+    """
+    start = time.perf_counter()
+    n, H = problem.n, problem.horizon
+    moves = np.zeros((H, n, n), dtype=int)
+    positions = problem.available.astype(int)
+    messages = []
+    for d in range(H):
+        day = greedy_allocation(problem.day_problem(d, positions))
+        moves[d] = day.x * (1 - np.eye(n, dtype=int))
+        positions = day.x.sum(axis=0)
+        messages += [f"Day {d + 1}: {m}" for m in day.messages if "above staging capacity" in m]
+    plan = DailyPlan.from_moves(problem.available, moves)
+    messages.append(f"{int(moves.sum())} single-team move(s) over {H} day(s) by the day-by-day greedy rule.")
+    return DailyResult(
+        strategy="greedy",
+        status="HEURISTIC",
+        plan=plan,
         runtime_seconds=time.perf_counter() - start,
         messages=messages,
     )

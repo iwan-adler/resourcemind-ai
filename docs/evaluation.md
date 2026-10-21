@@ -1,7 +1,8 @@
 # Evaluation
 
 All numbers below were produced by `python scripts/run_evaluation.py` (default seeds 42, 7, 2024, 99, 314)
-on 2026-10-20 (Python 3.14.7, Windows, x64 emulation) in about 22 s. Raw outputs:
+on 2026-10-21 (Python 3.14.7, Windows, x64 emulation) in about 123 s (about 22 s before the day-by-day
+cases were added). Raw outputs:
 `results/evaluation_results.json`, `results/forecast_metrics.csv`, `results/strategy_comparison.csv`,
 `results/summary_by_scenario.csv`. **The data are synthetic**, so these results describe behaviour of the
 method on the generator, not real-world performance.
@@ -60,7 +61,9 @@ For each seed and case: generate data → forecast (auto-selected model) → pla
 `AllocationProblem` → run the current, greedy and optimized strategies → score all three with the same
 `compute_outcome` → validate all three with the same independent validator.
 
-Cases: the four presets plus `shortage_floor30` (the shortage preset with a 30% per-zone coverage floor).
+Cases: the four presets plus `shortage_floor30` (the shortage preset with a 30% per-zone coverage floor),
+each in the default single-period mode. The same five cases are repeated in the day-by-day mode
+(suffix `_daily`, see [Day-by-day planning](#day-by-day-planning) below), plus four `_daily_seasonal` cases.
 
 ### Metrics
 
@@ -91,8 +94,9 @@ demand = 0), travel (team-minutes), teams moved, hard-constraint violations, run
 The 30% floor only binds for seed 42: greedy has 3 floor violations there (mean 0.6 over 5 seeds); the
 current allocation already meets the floor (its worst zone is at 35.6%).
 
-Optimizer status: **OPTIMAL in all 25 runs**. Optimizer runtime: 22–49 ms mean per case, maximum 101 ms
-(greedy ≤ 4 ms, current < 0.1 ms).
+Optimizer status: **OPTIMAL in all 25 runs**. Optimizer runtime: 43–79 ms mean per case, maximum 132 ms
+(greedy ≤ 4 ms, current < 0.1 ms). The single-period numbers above are identical to those measured before
+the day-by-day mode was added; only runtimes vary between runs.
 
 ### Honest interpretation
 
@@ -110,10 +114,116 @@ Optimizer status: **OPTIMAL in all 25 runs**. Optimizer runtime: 22–49 ms mean
 * Fairness: minimising weighted unmet demand can *lower* the worst-off zone's coverage (shortage, seed 42:
   current 35.6% → optimized 22.9%). Priority weights alone do not prevent this.
 
+## Day-by-day planning
+
+### Method
+
+Same seeds, scenarios and forecast. `planning_mode = "daily"` builds a `MultiPeriodProblem` from the
+daily forecast (rounded per day), plans every day with CP-SAT (teams may move daily; a move costs
+$T_{ji}/480$ of the team's shift that day), and compares it with "keep current" and the day-by-day greedy
+rule (the single-period greedy applied each day to that day's demand, without look-ahead). All three are
+scored by `compute_daily_outcome` and checked by `validate_daily_plan`. See
+[the model](mathematical_model.md#day-by-day-multi-period-mode).
+
+* `<preset>_daily` and `shortage_floor30_daily`: auto-selected forecast model, as in single-period mode.
+* `<preset>_daily_seasonal`: the forecast model is forced to `seasonal_average_3w`. Reason: the auto
+  choice is the 28-day moving average in 4 of 5 seeds, and its forecast is the **same value for every
+  day of the horizon**, so the daily problem has no day-to-day demand changes to anticipate. The
+  seasonal average varies by weekday, which tests whether the optimizer gains when demand does change.
+  The demand in these cases differs from the auto cases, so compare strategies within a case only.
+
+Daily totals are not directly comparable with single-period totals: demand is rounded per day (e.g.
+normal: 81.4 vs 80.0 mean unmet for "current") and moving teams lose service while travelling.
+
+### Results (mean over 5 seeds)
+
+| Case | Strategy | Unmet | Weighted unmet | Coverage | Travel (team-min) | Team moves | Violations | Worst zone |
+|---|---|---|---|---|---|---|---|---|
+| normal_daily | current | 81.4 | 120.6 | 96.0% | 0 | 0 | 0 | 88.1% |
+| normal_daily | greedy | 18.4 | 26.6 | 99.2% | 29.2 | 1.4 | 0 | 94.3% |
+| normal_daily | optimized | 18.4 | 26.6 | 99.2% | 29.2 | 1.4 | 0 | 94.3% |
+| surge_daily | current | 325.8 | 457.9 | 85.8% | 0 | 0 | 0 | 61.7% |
+| surge_daily | greedy | 142.4 | 193.2 | 94.2% | 114.8 | 4.2 | 0 | 77.6% |
+| surge_daily | optimized | 141.8 | 192.4 | 94.2% | 113.0 | 4.2 | 0 | 77.6% |
+| shortage_daily | current | 431.2 | 613.6 | 76.1% | 0 | 0 | 0 | 52.7% |
+| shortage_daily | greedy | 370.6 | 497.2 | 80.3% | 97.6 | 3.8 | 0 | 53.7% |
+| shortage_daily | optimized | 370.4 | 497.0 | 80.3% | 86.2 | 3.6 | 0 | 53.7% |
+| disruption_daily | current | 81.4 | 120.6 | 96.0% | 0 | 0 | 0 | 88.1% |
+| disruption_daily | greedy | 22.6 | 31.1 | 99.0% | 31.4 | 1.4 | 0 | 94.8% |
+| disruption_daily | optimized | 22.6 | 31.1 | 99.0% | 31.4 | 1.4 | 0 | 94.8% |
+| shortage_floor30_daily | current | 431.2 | 613.6 | 76.1% | 0 | 0 | 0 | 52.7% |
+| shortage_floor30_daily | greedy | 370.6 | 497.2 | 80.3% | 97.6 | 3.8 | 4.2 | 53.7% |
+| shortage_floor30_daily | optimized | 370.4 | 499.1 | 80.3% | 82.0 | 3.4 | 0 | 55.2% |
+| normal_daily_seasonal | current | 100.6 | 147.8 | 94.9% | 0 | 0 | 0 | 86.5% |
+| normal_daily_seasonal | greedy | 28.2 | 39.2 | 98.7% | 175.6 | 7.6 | 0 | 96.9% |
+| normal_daily_seasonal | optimized | 27.4 | 38.1 | 98.7% | 207.6 | 8.8 | 0 | 96.7% |
+| surge_daily_seasonal | current | 373.2 | 521.8 | 83.8% | 0 | 0 | 0 | 61.0% |
+| surge_daily_seasonal | greedy | 188.2 | 256.1 | 92.1% | 302.8 | 11.0 | 0 | 76.7% |
+| surge_daily_seasonal | optimized | 188.0 | 255.1 | 92.1% | 270.6 | 9.8 | 0 | 75.7% |
+| shortage_daily_seasonal | current | 461.8 | 656.9 | 74.5% | 0 | 0 | 0 | 52.9% |
+| shortage_daily_seasonal | greedy | 402.4 | 541.3 | 78.5% | 317.0 | 12.0 | 0 | 53.9% |
+| shortage_daily_seasonal | optimized | 401.4 | 537.4 | 78.5% | 242.4 | 8.8 | 0 | 51.7% |
+| disruption_daily_seasonal | current | 100.6 | 147.8 | 94.9% | 0 | 0 | 0 | 86.5% |
+| disruption_daily_seasonal | greedy | 34.0 | 46.4 | 98.4% | 208.8 | 8.0 | 0 | 93.4% |
+| disruption_daily_seasonal | optimized | 33.6 | 45.5 | 98.4% | 179.4 | 7.0 | 0 | 93.3% |
+
+"Team moves" counts each team each time it moves, summed over the days.
+
+### Optimizer vs greedy, run by run (weighted unmet demand)
+
+`optimizer_vs_greedy` in `results/evaluation_results.json`. Gap = greedy − optimizer (positive = optimizer
+better).
+
+| Case | Runs | Optimizer better | Tie | Optimizer worse | Mean gap | Max gap |
+|---|---|---|---|---|---|---|
+| single-period presets (4 cases) | 20 | 0 | 20 | 0 | 0.00 | 0.00 |
+| shortage_floor30 | 5 | 0 | 4 | 1 (floor binds) | −2.24 | 0.00 |
+| normal_daily | 5 | 0 | 5 | 0 | 0.00 | 0.00 |
+| surge_daily | 5 | 2 | 3 | 0 | 0.86 | 2.85 |
+| shortage_daily | 5 | 1 | 4 | 0 | 0.15 | 0.77 |
+| disruption_daily | 5 | 0 | 5 | 0 | 0.00 | 0.00 |
+| shortage_floor30_daily | 5 | 0 | 4 | 1 (floor binds) | −1.95 | 0.00 |
+| normal_daily_seasonal | 5 | 2 | 3 | 0 | 1.06 | 2.94 |
+| surge_daily_seasonal | 5 | 2 | 3 | 0 | 1.03 | 4.29 |
+| shortage_daily_seasonal | 5 | **5** | 0 | 0 | 3.88 | 6.96 |
+| disruption_daily_seasonal | 5 | 2 | 3 | 0 | 0.81 | 2.37 |
+
+"Optimizer worse" only occurs where the coverage floor binds (seed 42): greedy ignores the floor and
+violates it (21 day-zone violations in daily mode), the optimizer satisfies it.
+
+Optimizer status in daily mode: OPTIMAL in all 25 auto-forecast runs and in 19 of 20 seasonal runs. The
+exception (normal_daily_seasonal, seed 42) proved stage 1 optimal, so its weighted unmet demand is
+optimal, but stage 2 (travel) was only FEASIBLE within the 10 s limit. Runtime per daily optimizer run:
+0.3–1.5 s mean per auto case (maximum 4.7 s), 1.0–3.4 s mean per seasonal case (maximum 14.7 s, the
+FEASIBLE run, whose stage 2 used its full 10 s limit). Day-by-day greedy ≤ 16 ms.
+
+### Honest interpretation
+
+* **The day-by-day optimizer now beats greedy on weighted unmet demand, but only by a small margin.**
+  With the auto-selected forecast it wins in 3 of 25 daily runs (maximum 2.85 weighted requests, under
+  0.4% of the greedy value) and ties the rest. With a weekday-varying forecast it wins in 11 of 20 runs,
+  including all 5 shortage runs, by up to 6.96 weighted requests (about 1.3% of greedy's 541). It is
+  never worse except where the coverage floor makes greedy's plan infeasible.
+* **Why the gain is small with the default forecast:** the moving-average forecast is flat across the
+  horizon, so every day looks the same. Day-by-day greedy then makes all its moves on day 1, which is
+  close to the single-period decision. The optimizer's remaining edge comes from accounting for the service
+  lost while driving (at most ~0.94 requests per move with the 45-minute limit) and choosing cheaper
+  moves.
+* **When demand varies by day** (seasonal forecast), greedy re-chases each day's demand: it makes more
+  moves (12.0 vs 8.8 per run in shortage) with more travel (317 vs 242 team-minutes) and still leaves more
+  weighted demand unmet. The optimizer can anticipate later days. In normal_daily_seasonal it uses *more*
+  travel than greedy (207.6 vs 175.6) because the lexicographic objective buys extra service first.
+* Worst-zone coverage is not guaranteed to improve: in shortage_daily_seasonal the optimizer's mean
+  worst-zone coverage (51.7%) is lower than greedy's (53.9%). As in single-period mode, minimising
+  weighted unmet demand is not a fairness guarantee; the per-day coverage floor makes equity explicit.
+* The service-loss model is mild by construction (45-minute limit vs a 480-minute shift). A longer travel
+  limit or a shorter effective shift would make movement more expensive and would likely widen the gap;
+  that was not measured here.
+
 ## Robustness
 
-Five data seeds × four presets (+ the coverage-floor case). All optimized plans passed independent
-validation; the infeasible-scenario path is exercised by tests (staging capacity × 0.3, coverage floor
+Five data seeds × four presets (+ the coverage-floor case), in both planning modes, plus the four
+seasonal day-by-day cases. All optimized plans passed independent validation; the infeasible-scenario path is exercised by tests (staging capacity × 0.3, coverage floor
 60% under shortage), and the app reports `INFEASIBLE` with reasons.
 
 ## Efficiency
