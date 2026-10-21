@@ -200,10 +200,12 @@ FEASIBLE run, whose stage 2 used its full 10 s limit). Day-by-day greedy ≤ 16 
 ### Honest interpretation
 
 * **The day-by-day optimizer now beats greedy on weighted unmet demand, but only by a small margin.**
-  With the auto-selected forecast it wins in 3 of 25 daily runs (maximum 2.85 weighted requests, under
-  0.4% of the greedy value) and ties the rest. With a weekday-varying forecast it wins in 11 of 20 runs,
-  including all 5 shortage runs, by up to 6.96 weighted requests (about 1.3% of greedy's 541). It is
-  never worse except where the coverage floor makes greedy's plan infeasible.
+  With the auto-selected forecast it wins in 3 of 25 daily runs (0.77–2.85 weighted requests; 0.06–2.0%
+  of the greedy value) and ties the rest. With a weekday-varying forecast it wins in 11 of 20 runs,
+  including all 5 shortage runs, by 0.30–6.96 weighted requests. Relative to greedy that is mostly
+  0.4–1.5%; the largest relative gain, 17%, is in a run where greedy leaves little unmet (normal, seed 7:
+  17.1 → 14.2). Every gain is under 0.4% of total demand. It is never worse except where the coverage
+  floor makes greedy's plan infeasible.
 * **Why the gain is small with the default forecast:** the moving-average forecast is flat across the
   horizon, so every day looks the same. Day-by-day greedy then makes all its moves on day 1, which is
   close to the single-period decision. The optimizer's remaining edge comes from accounting for the service
