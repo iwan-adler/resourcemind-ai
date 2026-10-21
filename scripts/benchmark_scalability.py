@@ -7,7 +7,7 @@ Problems come from ``resourcemind.simulation.scaled`` (same structure as the dem
 data at a larger scale). For each size and seed it runs greedy and the CP-SAT
 optimizer in both planning modes (the day-by-day optimizer warm-started from the
 greedy plan, as in the app) and writes ``results/scalability.csv``.
-``time-limit`` applies to EACH optimizer stage. Runtimes depend on hardware.
+``time-limit`` applies to each optimizer stage. Runtimes depend on hardware.
 """
 
 import argparse
