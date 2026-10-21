@@ -14,7 +14,7 @@ import numpy as np
 import pandas as pd
 
 from resourcemind.allocation.baselines import current_allocation, current_daily, greedy_allocation, greedy_daily
-from resourcemind.allocation.explain import plan_summary, zone_rationale
+from resourcemind.allocation.explain import daily_plan_summary, plan_summary, zone_rationale
 from resourcemind.allocation.models import AllocationProblem, AllocationResult, Outcome, compute_outcome
 from resourcemind.allocation.multiperiod import (
     DailyOutcome,
@@ -83,6 +83,7 @@ class DailyPlanning:
     runs: dict[str, DailyRun]
     comparison: pd.DataFrame
     zone_tables: dict[str, pd.DataFrame]
+    summary_lines: list[str]
 
 
 @dataclass
@@ -118,6 +119,15 @@ class PipelineResult:
     @property
     def active_zone_tables(self) -> dict[str, pd.DataFrame]:
         return self.daily.zone_tables if self.daily is not None else self.zone_tables
+
+    @property
+    def active_summary_lines(self) -> list[str]:
+        return self.daily.summary_lines if self.daily is not None else self.summary_lines
+
+    @property
+    def active_optimizer(self):
+        """The optimized run (StrategyRun or DailyRun) for the selected planning mode."""
+        return (self.daily.runs if self.daily is not None else self.runs)["optimized"]
 
 
 def gap_table(inputs: ScenarioInputs, demand: pd.DataFrame, problem: AllocationProblem) -> pd.DataFrame:
@@ -283,7 +293,12 @@ def run_daily_planning(
         for k, r in runs.items()
         if r.outcome is not None
     }
-    return DailyPlanning(dproblem, runs, daily_comparison_table(dproblem, runs), zone_tables)
+    opt, before = runs["optimized"], runs["current"].outcome
+    if opt.outcome is not None and not opt.violations:
+        summary = daily_plan_summary(dproblem, opt.result.plan, before, opt.outcome)
+    else:
+        summary = list(opt.result.messages) + list(opt.result.diagnostics.get("infeasibility_reasons", []))
+    return DailyPlanning(dproblem, runs, daily_comparison_table(dproblem, runs), zone_tables, summary)
 
 
 def run_pipeline(
@@ -477,7 +492,7 @@ def run_summary_markdown(result: PipelineResult) -> str:
         "",
         "## Plan summary",
         "",
-        *[f"- {line}" for line in result.summary_lines],
+        *[f"- {line}" for line in result.active_summary_lines],
         "",
         "## Strategy comparison",
         "",

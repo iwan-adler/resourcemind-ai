@@ -240,6 +240,18 @@ def daily_movements_table(problem: MultiPeriodProblem, plan: DailyPlan) -> pd.Da
     return pd.DataFrame(rows, columns=cols)
 
 
+def day_allocation_matrix(problem: MultiPeriodProblem, plan: DailyPlan, d: int) -> np.ndarray:
+    """Day d (0-based) as a single-period matrix: x[j, i] = moves j -> i, x[j, j] = teams that stayed.
+
+    Column sums equal the teams stationed at the end of day d, so the single-period
+    map and tables can show one day of a daily plan.
+    """
+    start = problem.available if d == 0 else plan.stationed[:, d - 1]
+    x = plan.moves[d].astype(int).copy()
+    np.fill_diagonal(x, np.asarray(start, dtype=int) - x.sum(axis=1))
+    return x
+
+
 def stationed_table(problem: MultiPeriodProblem, plan: DailyPlan) -> pd.DataFrame:
     """Zone x day matrix of stationed teams (day 0 = current positions)."""
     data = np.column_stack([problem.available, plan.stationed])

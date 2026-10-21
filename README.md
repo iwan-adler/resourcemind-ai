@@ -33,7 +33,7 @@ leaves some zones under-served while others have spare capacity. The tool:
 |---|---|
 | Data | Deterministic synthetic generator (10 zones × 240 days, 3 demand categories, weekly/annual seasonality, spikes, city-wide events), schema validation |
 | Forecasting | Seasonal naive, seasonal average, 28-day moving average and a gradient-boosting model; chronological train/validation/test; MAE/RMSE/WAPE; empirical intervals with measured coverage |
-| Allocation | CP-SAT integer model with conservation, staging capacity, service caps, travel limits, blocked routes, inaccessible zones, minimum retention and an optional equity floor; lexicographic or weighted objective; infeasibility diagnosis. Optional day-by-day mode: teams move daily and travel time reduces that day's service |
+| Allocation | CP-SAT integer model with conservation, staging capacity, service caps, travel limits, blocked routes, inaccessible zones, minimum retention and an optional equity floor; lexicographic or weighted objective; infeasibility diagnosis. Optional day-by-day mode (followed by every page): teams move daily and travel time reduces that day's service |
 | Baselines | Current allocation and a transparent greedy heuristic (applied day by day in daily mode), scored with the same function |
 | Validation | Independent re-check of every hard constraint for every strategy |
 | Scenarios | 4 presets plus a Scenario Lab (demand stress, resources, service rate, staging, priorities, travel, blocked routes, access, coverage floor) with reset |

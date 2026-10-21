@@ -362,9 +362,11 @@ def build_problem(inputs: ScenarioInputs, demand_units) -> AllocationProblem:
     )
 
 
-def with_resource_factor(problem: AllocationProblem, factor: float) -> AllocationProblem:
+def with_resource_factor(problem, factor: float):
+    """Scale available teams; works for AllocationProblem and MultiPeriodProblem."""
     return replace(problem, available=scale_teams(problem.available, factor))
 
 
-def with_demand_factor(problem: AllocationProblem, factor: float) -> AllocationProblem:
+def with_demand_factor(problem, factor: float):
+    """Scale demand (per zone, or per zone and day); works for both problem types."""
     return replace(problem, demand=np.round(problem.demand * max(factor, 0.0)).astype(int))

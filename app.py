@@ -21,8 +21,13 @@ import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 import streamlit as st  # noqa: E402
 
-from resourcemind.allocation.models import compute_outcome, movements_table  # noqa: E402
-from resourcemind.allocation.multiperiod import daily_movements_table, stationed_table  # noqa: E402
+from resourcemind.allocation.models import movements_table  # noqa: E402
+from resourcemind.allocation.multiperiod import (  # noqa: E402
+    compute_daily_outcome,
+    daily_movements_table,
+    day_allocation_matrix,
+    stationed_table,
+)
 from resourcemind.config import AppConfig, config_from_dict, load_config  # noqa: E402
 from resourcemind.data.generate import generate_dataset  # noqa: E402
 from resourcemind.data.validate import DataValidationError  # noqa: E402
@@ -102,7 +107,8 @@ def get_sensitivity(
     config_json: str, scenario: str, model: str, overrides_json: str, replace: bool, parameter: str, factors: tuple
 ):
     result = get_result(config_json, scenario, model, overrides_json, replace)
-    return sensitivity_sweep(result.problem, config_from_dict(json.loads(config_json)), parameter, list(factors))
+    problem = result.daily.problem if result.daily is not None else result.problem
+    return sensitivity_sweep(problem, config_from_dict(json.loads(config_json)), parameter, list(factors))
 
 
 # --------------------------------------------------------------------------- state helpers
@@ -263,7 +269,7 @@ def export_panel(r: PipelineResult) -> None:
 
 # --------------------------------------------------------------------------- shared blocks
 def status_strip(r: PipelineResult) -> None:
-    opt = r.runs["optimized"]
+    opt = r.active_optimizer
     validated = opt.outcome is not None and not opt.violations
     parts = [
         ui.pill(f"Solver: {opt.result.status}", ui.status_tone(opt.result.status)),
@@ -272,8 +278,10 @@ def status_strip(r: PipelineResult) -> None:
             "good" if validated else "critical",
         ),
         ui.pill(f"Forecast: {r.forecast.model}", "info"),
-        ui.pill("Synthetic data", "warning"),
     ]
+    if r.daily is not None:
+        parts.append(ui.pill(f"Day-by-day plan · {r.daily.problem.horizon} days", "info"))
+    parts.append(ui.pill("Synthetic data", "warning"))
     st.markdown(" ".join(parts), unsafe_allow_html=True)
 
 
@@ -287,7 +295,7 @@ def plan_or_current(r: PipelineResult):
 
 
 def infeasible_box(r: PipelineResult) -> None:
-    opt = r.runs["optimized"]
+    opt = r.active_optimizer
     st.error(
         f"The optimizer did not produce a valid plan (status **{opt.result.status}**). "
         "No recommendation is shown as feasible."
@@ -296,17 +304,16 @@ def infeasible_box(r: PipelineResult) -> None:
         st.markdown(f"- {line}")
 
 
-def map_table(r: PipelineResult, x: np.ndarray, label: str) -> pd.DataFrame:
+def map_table(r: PipelineResult, demand: np.ndarray, stationed: np.ndarray, served: np.ndarray, label: str):
     p = r.problem
-    o = compute_outcome(p, x)
-    cov = np.where(p.demand > 0, o.served / np.maximum(p.demand, 1), 1.0)
+    cov = np.where(demand > 0, served / np.maximum(demand, 1), 1.0)
     return pd.DataFrame(
         {
             "Zone": [f"{z} {n}" for z, n in zip(p.zone_ids, p.zone_names, strict=True)],
             "Status": [charts.STATUS_STYLE[charts.coverage_status(c)][2] for c in cov],
-            "Demand (requests)": p.demand,
+            "Demand (requests)": demand,
             "Current teams": p.available,
-            f"{label} teams": o.stationed,
+            f"{label} teams": stationed,
             "Coverage": cov,
             "Priority weight": p.weights,
             "Accessible": ["No" if v else "Yes" for v in r.gaps["inaccessible"]],
@@ -322,22 +329,18 @@ def page_overview(r: PipelineResult) -> None:
     if r.inputs.changes:
         st.caption("Inputs changed from defaults: " + "; ".join(r.inputs.changes))
     status_strip(r)
-    if r.daily is not None:
-        st.info(
-            "Day-by-day planning is on: the **Allocation planner** and **Strategy evaluation** show the daily plan. "
-            "This overview shows the single repositioning decision for the whole horizon."
-        )
+    daily = r.daily is not None
 
-    p, cmp = r.problem, r.comparison.set_index("strategy")
+    p, cmp = r.problem, r.active_comparison.set_index("strategy")
     cur = cmp.loc["current"]
-    opt_ok = r.runs["optimized"].outcome is not None and not r.runs["optimized"].violations
+    opt_ok = r.active_optimizer.outcome is not None and not r.active_optimizer.violations
     opt = cmp.loc["optimized"] if opt_ok else None
     H = r.config.horizon_days
     cov_opt = opt["coverage"] if opt is not None else None
     cards = [
         {
             "label": f"Planning demand · next {H} d",
-            "value": fmt_int(p.demand.sum()),
+            "value": fmt_int(cur["total_demand"]),
             "sub": f"requests · interval {r.demand['lower_total'].sum():,.0f}-{r.demand['upper_total'].sum():,.0f}",
             "tone": "info",
         },
@@ -364,7 +367,7 @@ def page_overview(r: PipelineResult) -> None:
             else ("good" if opt["weighted_unmet"] < cur["weighted_unmet"] else "neutral"),
         },
         {
-            "label": "Teams to reposition",
+            "label": "Team moves (all days)" if daily else "Teams to reposition",
             "value": fmt_int(opt["teams_moved"]) if opt is not None else "n/a",
             "sub": f"{opt['travel_minutes']:,.0f} team-minutes travel" if opt is not None else "no valid plan",
             "tone": "info",
@@ -384,7 +387,7 @@ def page_overview(r: PipelineResult) -> None:
         )
     with right:
         st.subheader("Plan summary")
-        for line in r.summary_lines:
+        for line in r.active_summary_lines:
             st.markdown(f"- {line}")
         short = r.gaps[r.gaps["gap"] > 0].sort_values("gap", ascending=False)
         st.markdown("**Largest pre-allocation shortages**")
@@ -403,22 +406,34 @@ def page_overview(r: PipelineResult) -> None:
             )
 
     st.subheader("Shortage map (schematic)")
-    x, outcome, is_plan = plan_or_current(r)
+    is_plan = opt_ok
     view = "Recommended plan"
     if is_plan:
         view = st.segmented_control(
             "Map shows", ["Recommended plan", "Current allocation"], default="Recommended plan", key="map_view"
         )
-    if view == "Current allocation" or not is_plan:
-        x, outcome = r.runs["current"].result.x, r.runs["current"].outcome
-    st.plotly_chart(charts.zone_map(r.inputs.zones, r.problem, x, outcome.served, show_moves=is_plan), width="stretch")
+    show_plan = is_plan and view != "Current allocation"
+    if daily:
+        dp = r.daily.problem
+        day = st.slider("Day", 1, dp.horizon, 1, key="map_day") if dp.horizon > 1 else 1
+        plan = r.daily.runs["optimized" if show_plan else "current"].result.plan
+        x = day_allocation_matrix(dp, plan, day - 1)
+        served = compute_daily_outcome(dp, plan).served[:, day - 1]
+        map_problem = dp.day_problem(day - 1, x.sum(axis=1))
+        demand = dp.demand[:, day - 1]
+        moves_note = f"Arrows = team movements on day {day}; teams = positions at the end of day {day}."
+    else:
+        run = r.runs["optimized" if show_plan else "current"]
+        x, served, map_problem, demand = run.result.x, run.outcome.served, r.problem, r.problem.demand
+        moves_note = "Arrows = recommended team movements."
+    st.plotly_chart(charts.zone_map(r.inputs.zones, map_problem, x, served, show_moves=show_plan), width="stretch")
     st.caption(
         "Marker size = forecast demand; colour and shape = coverage status; label = zone · teams · coverage. "
-        "Arrows = recommended team movements. Synthetic coordinates, not a real place."
+        f"{moves_note} Synthetic coordinates, not a real place."
     )
     with st.expander("Accessible table version of the map", expanded=False):
         st.dataframe(
-            map_table(r, x, "Shown"),
+            map_table(r, demand, x.sum(axis=0), served, "Shown"),
             hide_index=True,
             width="stretch",
             column_config={"Coverage": st.column_config.ProgressColumn(format="percent", min_value=0, max_value=1)},
@@ -991,8 +1006,10 @@ def page_lab(r: PipelineResult, cfg: AppConfig, scenario: str, model: str) -> No
         "travel_minutes",
         "min_zone_coverage",
     ]
-    b = base.comparison.set_index("strategy")
-    a = r.comparison.set_index("strategy")
+    if r.daily is not None:
+        st.caption("Day-by-day planning mode: both runs are day-by-day plans over the same horizon.")
+    b = base.active_comparison.set_index("strategy")
+    a = r.active_comparison.set_index("strategy")
     rows = []
     for s in ["current", "greedy", "optimized"]:
         for label, src in [("preset", b), ("your scenario", a)]:
@@ -1007,21 +1024,30 @@ def page_lab(r: PipelineResult, cfg: AppConfig, scenario: str, model: str) -> No
             "weighted_unmet": st.column_config.NumberColumn(format="%.1f"),
         },
     )
-    bo, ao = base.runs["optimized"].outcome, r.runs["optimized"].outcome
-    if ao is None:
+    bo, ao = base.active_optimizer.outcome, r.active_optimizer.outcome
+    if ao is None or r.active_optimizer.violations:
         infeasible_box(r)
     elif bo is not None:
-        st.markdown("**Recommended teams per zone: preset vs your scenario**")
+        if r.daily is not None:
+            H = r.daily.problem.horizon
+            st.markdown(f"**Recommended teams per zone at the end of day {H}: preset vs your scenario**")
+            d_b, d_a = base.daily.problem.demand.sum(axis=1), r.daily.problem.demand.sum(axis=1)
+            t_b, t_a = bo.stationed[:, -1], ao.stationed[:, -1]
+            s_b, s_a = bo.served_total, ao.served_total
+        else:
+            st.markdown("**Recommended teams per zone: preset vs your scenario**")
+            d_b, d_a = base.problem.demand, r.problem.demand
+            t_b, t_a, s_b, s_a = bo.stationed, ao.stationed, bo.served, ao.served
         diff = pd.DataFrame(
             {
                 "zone": [f"{zid} {n}" for zid, n in zip(r.problem.zone_ids, r.problem.zone_names, strict=True)],
-                "demand (preset)": base.problem.demand,
-                "demand (yours)": r.problem.demand,
-                "teams (preset plan)": bo.stationed,
-                "teams (your plan)": ao.stationed,
-                "change": ao.stationed - bo.stationed,
-                "coverage (preset)": bo.served / np.maximum(base.problem.demand, 1),
-                "coverage (yours)": ao.served / np.maximum(r.problem.demand, 1),
+                "demand (preset)": d_b,
+                "demand (yours)": d_a,
+                "teams (preset plan)": t_b,
+                "teams (your plan)": t_a,
+                "change": t_a - t_b,
+                "coverage (preset)": s_b / np.maximum(d_b, 1),
+                "coverage (yours)": s_a / np.maximum(d_a, 1),
             }
         )
         st.dataframe(
@@ -1046,7 +1072,7 @@ def page_strategies(r: PipelineResult, cfg: AppConfig, key_args: tuple) -> None:
         st.info(
             "Day-by-day planning mode: strategies re-plan every day; travel time reduces the moving team's service "
             "that day. Greedy applies the single-period rule one day at a time without look-ahead. "
-            "The sensitivity analysis below still uses the single-period model."
+            "The sensitivity analysis below re-solves the day-by-day strategies (about 0.5-2 s per point)."
         )
     cmp = r.active_comparison
     c = cmp.copy()

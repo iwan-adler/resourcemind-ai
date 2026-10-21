@@ -96,3 +96,31 @@ def test_daily_planning_mode_renders_every_page(app):
     assert any("service_lost_requests" in d.value.columns for d in app.dataframe)
     app.sidebar.radio(key="planning_mode").set_value("single").run()
     assert not any(s.value == "Teams stationed per zone and day" for s in app.subheader)
+
+
+def test_daily_mode_overview_lab_and_sensitivity(app):
+    app.sidebar.radio(key="planning_mode").set_value("daily").run()
+    app.sidebar.radio(key="page").set_value("Command overview").run()
+    assert not app.exception
+    text = _texts(app)
+    assert "Day-by-day plan" in text and "team move(s) over 7 days" in text
+    app.slider(key="map_day").set_value(3).run()
+    assert not app.exception
+    assert "movements on day 3" in _texts(app)
+
+    app.sidebar.radio(key="page").set_value("Scenario lab").run()
+    app.slider(key="lab_w_normal_stage").set_value(0.3)
+    app.button[0].click().run()  # "Run simulation"
+    assert not app.exception
+    text = _texts(app)
+    assert "INFEASIBLE" in text and "day-by-day" in text
+    app.button(key="lab_reset").click().run()
+
+    app.sidebar.radio(key="page").set_value("Strategy evaluation").run()
+    next(b for b in app.button if b.label == "Run sensitivity analysis").click().run()
+    assert not app.exception
+    _, sweep = app.session_state["sensitivity"]
+    assert set(sweep["strategy"]) == {"current", "greedy", "optimized"}
+    assert (sweep.loc[sweep["strategy"] == "optimized", "status"] == "OPTIMAL").all()
+    del app.session_state["sensitivity"]
+    app.sidebar.radio(key="planning_mode").set_value("single").run()

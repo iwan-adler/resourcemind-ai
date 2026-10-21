@@ -10,10 +10,12 @@ from resourcemind.allocation.multiperiod import (
     MultiPeriodProblem,
     compute_daily_outcome,
     daily_movements_table,
+    day_allocation_matrix,
     optimize_daily,
 )
 from resourcemind.allocation.validation import validate_daily_plan
 from resourcemind.pipeline import PipelineSettings, run_pipeline
+from resourcemind.simulation.sensitivity import sensitivity_sweep
 
 
 def make_daily_problem(
@@ -239,3 +241,34 @@ def test_pipeline_daily_mode(config, dataset, forecast_eval):
         assert opt.outcome.weighted_unmet <= d.runs[key].outcome.weighted_unmet + 1e-9
     # single-period results are unchanged by the daily mode
     np.testing.assert_array_equal(res.runs["optimized"].result.x, single.runs["optimized"].result.x)
+
+
+def test_day_allocation_matrix_matches_plan():
+    p = make_daily_problem(
+        demand=((80, 0, 0), (0, 80, 0), (0, 0, 80)),
+        available=(2, 2, 2),
+        travel=((0, 20, 30), (20, 0, 25), (30, 25, 0)),
+    )
+    plan = optimize_daily(p).plan
+    start = p.available
+    for d in range(p.horizon):
+        x = day_allocation_matrix(p, plan, d)
+        np.testing.assert_array_equal(x.sum(axis=1), start)  # every team starts the day somewhere
+        np.testing.assert_array_equal(x.sum(axis=0), plan.stationed[:, d])
+        assert (x >= 0).all()
+        start = plan.stationed[:, d]
+
+
+def test_daily_sensitivity_sweep_reruns_daily_strategies(config, dataset, forecast_eval):
+    res = run_pipeline(
+        config.with_updates(planning_mode="daily"), PipelineSettings(), dataset=dataset, forecast_eval=forecast_eval
+    )
+    sweep = sensitivity_sweep(res.daily.problem, config, "resources", [0.5, 1.0])
+    assert len(sweep) == 6
+    opt = sweep[sweep["strategy"] == "optimized"].set_index("factor")
+    assert (opt["status"] == "OPTIMAL").all() and (opt["hard_violations"] == 0).all()
+    # at factor 1.0 the sweep reproduces the pipeline's daily comparison
+    base = res.daily.comparison.set_index("strategy").loc["optimized", "weighted_unmet"]
+    assert opt.loc[1.0, "weighted_unmet"] == base
+    assert opt.loc[0.5, "weighted_unmet"] > base
+    assert res.daily.summary_lines and "team move(s)" in res.daily.summary_lines[0]
