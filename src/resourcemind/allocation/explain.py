@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 
 from resourcemind.allocation.models import AllocationProblem, Outcome
+from resourcemind.allocation.multiperiod import DailyOutcome, DailyPlan, MultiPeriodProblem
 
 
 def zone_rationale(problem: AllocationProblem, x: np.ndarray, before: Outcome, after: Outcome) -> pd.DataFrame:
@@ -74,5 +75,38 @@ def plan_summary(problem: AllocationProblem, before: Outcome, after: Outcome) ->
         lines.append(
             f"System-wide shortage: total team capacity {total_capacity} < servable demand "
             f"{int(problem.servable.sum())}; unmet demand is unavoidable."
+        )
+    return lines
+
+
+def daily_plan_summary(
+    problem: MultiPeriodProblem, plan: DailyPlan, before: DailyOutcome, after: DailyOutcome
+) -> list[str]:
+    """Summary lines for a day-by-day plan, in the same style as ``plan_summary``."""
+    H = problem.horizon
+    total_demand = int(problem.demand.sum())
+    move_days = [d + 1 for d in range(H) if plan.moves[d].sum() > 0]
+    lost = float(np.einsum("dji,ji->", plan.moves, problem.travel.astype(float)))
+    lost *= problem.service_per_team / problem.minutes_per_shift
+    when = f"on day(s) {', '.join(map(str, move_days))}" if move_days else "on no day"
+    lines = [
+        f"{after.teams_moved} team move(s) over {H} days, {when} ({after.travel_minutes:.0f} team-minutes of "
+        f"travel), change weighted unmet demand from {before.weighted_unmet:.1f} to {after.weighted_unmet:.1f}.",
+        f"Requests served: {int(before.served.sum())} -> {int(after.served.sum())} of {total_demand}.",
+    ]
+    if lost > 0:
+        lines.append(
+            f"Travel uses about {lost:.1f} requests of service on the days teams move "
+            f"({problem.minutes_per_shift}-minute shift assumed)."
+        )
+    unservable = int((problem.demand - problem.servable).sum())
+    if unservable > 0:
+        lines.append(f"{unservable} requests exceed daily zone service caps (K) and cannot be served by any plan.")
+    daily_capacity = int(problem.available.sum()) * problem.service_per_team
+    short_days = [d + 1 for d in range(H) if daily_capacity < problem.servable[:, d].sum()]
+    if short_days:
+        lines.append(
+            f"System-wide shortage on {len(short_days)} of {H} days: total team capacity {daily_capacity}/day is "
+            "below servable demand; unmet demand is unavoidable."
         )
     return lines

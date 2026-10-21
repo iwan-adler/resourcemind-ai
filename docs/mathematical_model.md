@@ -117,6 +117,9 @@ Coverage before allocation $= \min(D_i, K_i, R A_i) / D_i$.
 Optional (`planning_mode = "daily"` in the config, "Planning mode" in the app sidebar; code in
 `resourcemind/allocation/multiperiod.py`). The single-period model above stays the default and is
 unchanged. In daily mode teams may be repositioned every day, and travelling costs service time.
+Every app page follows the selected mode: the Command overview's cards and summary use the daily plan and
+its map shows one chosen day (positions at the end of that day, arrows for that day's moves); the
+Scenario lab compares day-by-day plans; the sensitivity sweep re-solves the day-by-day strategies.
 
 ### Additional data
 
