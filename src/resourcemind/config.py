@@ -55,6 +55,9 @@ class AppConfig:
     max_travel_minutes: int = 45
     min_teams_retained: int = 1
     planning_basis: str = "point"  # "point" forecast or "upper" empirical interval
+    # "single": one repositioning decision for the whole horizon (default).
+    # "daily": day-by-day plan; travel time eats into the moving team's shift.
+    planning_mode: str = "single"
     forecast: ForecastConfig = field(default_factory=ForecastConfig)
     optimizer: OptimizerConfig = field(default_factory=OptimizerConfig)
 
@@ -77,6 +80,8 @@ class AppConfig:
             raise ValueError("total_teams cannot be negative")
         if self.planning_basis not in {"point", "upper"}:
             raise ValueError("planning_basis must be 'point' or 'upper'")
+        if self.planning_mode not in {"single", "daily"}:
+            raise ValueError("planning_mode must be 'single' or 'daily'")
         if self.optimizer.mode not in {"lexicographic", "weighted"}:
             raise ValueError("optimizer.mode must be 'lexicographic' or 'weighted'")
 

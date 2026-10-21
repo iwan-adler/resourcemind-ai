@@ -394,3 +394,28 @@ def sensitivity_chart(sweep: pd.DataFrame, metric: str, x_label: str, y_label: s
     fig.update_xaxes(title=x_label)
     fig.update_yaxes(title=y_label, rangemode="tozero")
     return _style(fig, 320)
+
+
+def daily_teams_heatmap(table: pd.DataFrame, staging_capacity: np.ndarray) -> go.Figure:
+    """Zone x day heatmap of stationed teams; ``table`` comes from multiperiod.stationed_table."""
+    values = table.to_numpy()
+    cap = np.asarray(staging_capacity)[:, None]
+    hover = [[f"cap {int(c[0])}" for _ in table.columns] for c in cap]
+    fig = go.Figure(
+        go.Heatmap(
+            z=values,
+            x=list(table.columns),
+            y=list(table.index),
+            text=values,
+            texttemplate="%{text}",
+            customdata=hover,
+            colorscale=[[0, "#1E293B"], [1, COLORS["accent"]]],
+            colorbar={"title": "Teams"},
+            hovertemplate="%{y} · %{x}: %{z} teams (%{customdata})<extra></extra>",
+            xgap=2,
+            ygap=2,
+        )
+    )
+    fig.update_yaxes(autorange="reversed", gridcolor="rgba(0,0,0,0)")
+    fig.update_xaxes(side="top", gridcolor="rgba(0,0,0,0)")
+    return _style(fig, 60 + 34 * len(table))

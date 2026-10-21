@@ -106,6 +106,81 @@ Coverage before allocation $= \min(D_i, K_i, R A_i) / D_i$.
 ## Key assumptions
 
 * Teams are interchangeable and serve $R$ requests per day regardless of zone.
-* Demand within the horizon is aggregated; intra-week timing and dispatch queues are not modelled.
-* Repositioning happens once, at the start of the horizon; travel time is a one-off cost.
+* Single-period mode (default): demand within the horizon is aggregated; intra-week timing and dispatch
+  queues are not modelled.
+* Single-period mode: repositioning happens once, at the start of the horizon; travel time is a one-off
+  cost. The day-by-day mode below relaxes both points.
 * Coverage equal to 1 when demand is zero (nothing left unserved).
+
+## Day-by-day (multi-period) mode
+
+Optional (`planning_mode = "daily"` in the config, "Planning mode" in the app sidebar; code in
+`resourcemind/allocation/multiperiod.py`). The single-period model above stays the default and is
+unchanged. In daily mode teams may be repositioned every day, and travelling costs service time.
+
+### Additional data
+
+| Symbol | Meaning | Unit | Source in code |
+|---|---|---|---|
+| $d$ | day, $d = 1..H$ | – | – |
+| $D_{id}$ | demand in zone $i$ on day $d$: daily forecast (`ZoneForecast.daily`, column `predicted`, or `upper` when planning against the upper interval) × stress multiplier, **rounded per day** | requests | `MultiPeriodProblem.demand` |
+| $K_i^{day}$ | maximum useful service per day (`max_useful_service_per_day`) | requests/day | `service_cap` |
+| $R^{day}$ | requests one team serves in a full day (default 10) | requests/team/day | `service_per_team` |
+| $L$ | minutes in a team's daily shift, **assumed 480** (one 8-hour shift) | minutes | `minutes_per_shift` |
+
+$A_i$, $M_i$, $w_i$, $T_{ji}$, $E_{ji}$, $r_i$ and $f$ are the same as in the single-period model.
+Because demand is rounded per day, $\sum_d D_{id}$ can differ from the single-period $D_i$ by a few
+requests.
+
+### Decision variables (all integer)
+
+* $X_{id}$ — teams stationed in zone $i$ at the end of day $d$; $X_{i0} = A_i$ is fixed.
+* $y_{jid}$ — teams moved from $j$ to $i$ on day $d$ (only for $j 
+e i$ with $E_{ji} = 1$).
+* $S_{id} \in \{0..\min(D_{id}, K_i^{day})\}$, $U_{id} = D_{id} - S_{id}$.
+
+### Constraints (for every zone $i$ and day $d$)
+
+$$X_{id} = X_{i,d-1} + \sum_j y_{jid} - \sum_k y_{ikd} \qquad \text{(flow conservation)}$$
+$$X_{i,d-1} - \sum_k y_{ikd} \ge \min(r_i, A_i) \qquad \text{(minimum retention: teams that stay)}$$
+$$X_{id} \le M_i \qquad \text{(staging capacity, every day)}$$
+$$S_{id} \le R^{day} X_{id} - \sum_j R^{day}\,\frac{T_{ji}}{L}\, y_{jid} \qquad \text{(service capacity after travel)}$$
+$$S_{id} \ge \lceil f \cdot \min(D_{id}, K_i^{day}) \rceil \qquad \text{(only when } f > 0\text{; applies on every day)}$$
+
+Teams leave only from where they were at the start of the day (outflow $\le X_{i,d-1}$, implied by the
+retention row), so a team makes at most one hop per day.
+
+**Travel consumes service.** A team that moves $j \to i$ on day $d$ spends $T_{ji}$ minutes of its
+$L = 480$-minute shift driving and serves $R^{day}(1 - T_{ji}/L)$ requests in zone $i$ that day, then
+full days afterwards. With $T^{max} = 45$ min and $R^{day} = 10$, one move costs at most
+$10 \cdot 45/480 \approx 0.94$ requests. The capacity row is multiplied by $L$ so CP-SAT sees integers:
+$L\,S_{id} \le R^{day} L X_{id} - \sum_j R^{day} T_{ji} y_{jid}$. Since $S_{id}$ is an integer, served
+requests are the floor of the fractional capacity, which is exactly how the shared scoring function
+(`compute_daily_outcome`) computes them for every strategy.
+
+### Objective
+
+Lexicographic as before: (1) minimise $\sum_d \sum_i w_i U_{id}$; (2) at that optimum, minimise
+$\sum_d \sum_{j
+e i} T_{ji}\, y_{jid}$ (team-minutes). The weighted-sum objective is also available.
+Same solver settings (CP-SAT, one worker, fixed seed, `linearization_level = 2`) and the same status
+semantics; infeasibility reasons reuse the single-period diagnosis (the static constraints of day 1 are
+identical) plus a note when a per-day coverage floor is active.
+
+### Baselines and validation
+
+* **Keep current:** $y = 0$ on every day.
+* **Day-by-day greedy:** day $d$ starts from the end-of-day-$(d-1)$ positions and applies the
+  single-period greedy rule against that day's demand only (no look-ahead; it does not see the service
+  lost while travelling, which the shared scoring then charges).
+* **Validator** (`validate_daily_plan`): recomputes, per day and from raw data, flow conservation of the
+  reported stationed counts against the reported moves, total teams, minimum retention, staging capacity,
+  route eligibility, integrality, non-negativity and the per-day coverage floor.
+* All three are scored by `compute_daily_outcome`; the comparison table has the same columns as in
+  single-period mode, with coverage and fairness computed from per-zone horizon totals.
+
+### Limits of this extension
+
+* Teams arrive within the day they move; there are no multi-day trips, crew hours or rest rules.
+* Demand on a day is served only that day (no backlog carried over).
+* The plan reacts to the forecast, not to realised demand; it is not re-optimised on a rolling basis.
