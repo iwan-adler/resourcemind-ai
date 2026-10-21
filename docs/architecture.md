@@ -21,13 +21,17 @@ allocation/multiperiod.py ─► optional day-by-day CP-SAT ┐
 allocation/baselines.py  ──► current_daily, greedy_daily ├─► multiperiod.compute_daily_outcome (shared scoring)
                                                        ┘   allocation/validation.validate_daily_plan (independent)
 allocation/explain.py    ──► per-zone rationale, plan summary
+allocation/counterfactual.py ► "what if?": re-solve with one move forced or forbidden
+allocation/response.py   ──► optional response-time standard (best service within the standard)
 metrics/evaluation.py    ──► forecast metrics, coverage, fairness
 simulation/sensitivity.py ─► re-solve all strategies across a parameter range
+simulation/robustness.py ──► score plans on held-out forecast errors
+simulation/scaled.py     ──► larger synthetic cities for the scalability benchmark
                                         │
 pipeline.py ──► run_pipeline(): the single workflow used by the app, the evaluation script and tests
                                         │
 app.py (Streamlit) + visualization/charts.py (Plotly) + ui/components.py (styling)
-scripts/: generate_data.py · run_evaluation.py · smoke_test.py
+scripts/: generate_data.py · run_evaluation.py · benchmark_scalability.py · smoke_test.py
 ```
 
 ## Design decisions

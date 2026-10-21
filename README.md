@@ -33,11 +33,11 @@ leaves some zones under-served while others have spare capacity. The tool:
 |---|---|
 | Data | Deterministic synthetic generator (10 zones × 240 days, 3 demand categories, weekly/annual seasonality, spikes, city-wide events), schema validation |
 | Forecasting | Seasonal naive, seasonal average, 28-day moving average and a gradient-boosting model; chronological train/validation/test; MAE/RMSE/WAPE; empirical intervals with measured coverage |
-| Allocation | CP-SAT integer model with conservation, staging capacity, service caps, travel limits, blocked routes, inaccessible zones, minimum retention and an optional equity floor; lexicographic or weighted objective; infeasibility diagnosis. Optional day-by-day mode (followed by every page): teams move daily and travel time reduces that day's service |
+| Allocation | CP-SAT integer model with conservation, staging capacity, service caps, travel limits, blocked routes, inaccessible zones, minimum retention and an optional equity floor; lexicographic or weighted objective; infeasibility diagnosis; proven optimality gap. Optional day-by-day mode (warm-started, never worse than greedy): teams move daily and travel time reduces that day's service. Optional response-time standard: demand counts only if a team can reach it in time, and neighbouring zones can help |
 | Baselines | Current allocation and a transparent greedy heuristic (applied day by day in daily mode), scored with the same function |
 | Validation | Independent re-check of every hard constraint for every strategy |
 | Scenarios | 4 presets plus a Scenario Lab (demand stress, resources, service rate, staging, priorities, travel, blocked routes, access, coverage floor) with reset |
-| Analysis | Strategy comparison, fairness by zone and tier, sensitivity sweeps |
+| Analysis | Strategy comparison, fairness by zone and tier, sensitivity sweeps, robustness to real forecast errors, "what if?" counterfactual explanations (re-solve with a move forced or forbidden), scalability benchmark to 100 zones |
 | Export | CSV (forecasts, plan, movements, strategies, sensitivity), JSON run record, Markdown summary |
 
 ## Screenshots
@@ -63,6 +63,22 @@ demand here, and both lower the worst-off zone's coverage. That is the fairness 
 
 ![Strategy comparison table and charts](docs/images/strategies.png)
 
+**What if? (Allocation planner):** each answer re-solves the real model with one move forbidden or forced.
+Forbidding either recommended move leaves an equally good plan (the moves are the cheapest of several
+options); forcing Harbor District → Old Town would cost 21.5 weighted requests.
+
+![What-if counterfactual explanations](docs/images/what_if.png)
+
+**Robustness to forecast error (Strategy evaluation):** every plan scored against 200 demand outcomes built
+from the model's real errors on the held-out test window.
+
+![Coverage of each plan across sampled demand outcomes](docs/images/robustness.png)
+
+**Response-time standard (20 min):** demand counts only if a team can reach it in time. The plan changes to
+one move (Eastfield → Westbrook) and weighted unmet demand falls from 52.4 to 20.0.
+
+![Allocation planner with a 20-minute response-time standard](docs/images/response_standard.png)
+
 ## Architecture
 
 ```
@@ -79,13 +95,15 @@ src/resourcemind/
   config.py  pipeline.py
   data/          generate.py validate.py load.py
   forecasting/   features.py models.py evaluation.py
-  allocation/    models.py optimizer.py baselines.py validation.py explain.py
-  simulation/    scenarios.py sensitivity.py
+  allocation/    models.py optimizer.py multiperiod.py response.py baselines.py validation.py
+                 explain.py counterfactual.py
+  simulation/    scenarios.py sensitivity.py robustness.py scaled.py
   metrics/       evaluation.py
   visualization/ charts.py
   ui/            components.py
-scripts/         generate_data.py run_evaluation.py smoke_test.py
-tests/           test_data/forecasting/optimizer/baselines/simulation/metrics/integration/app
+scripts/         generate_data.py run_evaluation.py benchmark_scalability.py smoke_test.py
+tests/           data, forecasting, optimizer, baselines, simulation, metrics, integration, app,
+                 multiperiod, response, robustness, counterfactual, scaled
 docs/            architecture, mathematical_model, data_dictionary, evaluation,
                  assumptions_and_limitations, demo_script
 results/         output of the evaluation command
@@ -120,7 +138,7 @@ Deep links open a specific section and scenario, which is handy during a demo:
 ## Tests, lint, smoke test
 
 ```bash
-pytest                      # 84 tests: data, forecasting, optimizer, baselines, simulation, metrics, integration, UI
+pytest                      # 110 tests
 ruff check . && ruff format --check .
 python scripts/smoke_test.py
 ```
@@ -135,7 +153,8 @@ python scripts/generate_data.py --seed 7
 ## Evaluation
 
 ```bash
-python scripts/run_evaluation.py           # seeds 42 7 2024 99 314 → results/*.json, *.csv
+python scripts/run_evaluation.py           # seeds 42 7 2024 99 314 → results/*.json, *.csv (~2 min)
+python scripts/benchmark_scalability.py    # 10-100 zones → results/scalability.csv (~10 min)
 ```
 
 Measured results (synthetic data, mean of 5 seeds; full tables in [docs/evaluation.md](docs/evaluation.md)):
@@ -144,13 +163,23 @@ Measured results (synthetic data, mean of 5 seeds; full tables in [docs/evaluati
   average 5.01, seasonal naive 6.23. The two best are effectively tied; neither is claimed superior.
 * **Allocation:** in the normal scenario, rebalancing cuts weighted unmet demand from 118.5 (current) to
   24.6 and raises coverage from 96.0% to 99.2%. The optimizer was OPTIMAL in 25/25 runs (≤ 0.15 s).
-  **Greedy matched the optimizer's weighted unmet demand in all 25 runs.** The optimizer's added value here
-  is lower travel in 7/25 runs, proven optimality, and satisfying an equity floor that greedy violates.
+  **On the 10-zone demo city, greedy matched the optimizer's weighted unmet demand in all 25 runs.** The
+  optimizer's added value at that size is lower travel in 7/25 runs, proven optimality, and satisfying an
+  equity floor that greedy violates.
+* **Scalability:** that tie is a small-problem effect. On synthetic cities of 25–100 zones the optimizer
+  is ahead of greedy in every run (by up to 141 weighted requests at 100 zones) and stays proven optimal in
+  about 1 s. Day-by-day planning stops proving optimality from 25 zones but is never worse than greedy.
 * **Day-by-day mode (optional):** the multi-period optimizer beats day-by-day greedy on weighted unmet
   demand in 3/25 runs with the default (flat) forecast and 11/20 runs with a weekday-varying forecast, by
   at most 6.96 weighted requests (≤ 0.4% of total demand; usually 0.4–2% of greedy's unmet, up to 17% where
   greedy's unmet is tiny); it is never worse except where greedy violates the equity floor. A real but small
   advantage on this synthetic data.
+* **Response-time standard (20 min):** the optimizer beats greedy in 5/20 runs (by 4.7–32.4 weighted
+  requests), never loses, and moves far fewer teams (surge: 1.4 vs 4.0 teams), because it knows a
+  neighbouring zone can already cover part of the demand.
+* **Robustness to real forecast errors:** optimized plans keep their advantage (normal: 7% vs 21% chance of
+  a sub-90% week compared with the current allocation). Planning against the upper forecast, or for the
+  expected outcome, is not reliably better than planning for the point forecast.
 
 ## Deploy (Streamlit Community Cloud, free)
 

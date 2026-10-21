@@ -33,6 +33,15 @@ Any real use would need human review, domain validation, and governance.
   is a cost, not lost service time. The optional day-by-day mode moves teams daily and deducts travel time
   from a 480-minute shift (an assumption), but has no backlog, crew-hour rules or rolling re-planning.
 * Maximum useful service (K) and staging capacity (M) are synthetic parameters.
+* The optional response-time standard uses zone-centroid travel times and one synthetic local response
+  time for every zone (about 11.1 min on the demo map, from map geometry). Real response times vary
+  within a zone, by time of day and by traffic; this is a coverage rule, not a dispatch simulation. The
+  greedy baseline does not reason about cross-zone response, which favours the optimizer in that mode.
+* The robustness check resamples about 20 complete forecast windows from the held-out test period, so it
+  shows how plans behave under the errors this model actually made, not a full probability model.
+* Scalability was measured on synthetic problems up to 100 zones. Single-period planning stayed fast and
+  proven optimal; day-by-day planning stops proving optimality from 25 zones within a 20 s limit per stage
+  (see `docs/evaluation.md`).
 
 ## How priority weights are chosen
 

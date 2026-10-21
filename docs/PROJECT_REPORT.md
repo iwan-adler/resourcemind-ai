@@ -25,6 +25,7 @@ the running app; nothing is estimated or invented.
 9. [The optimization model (single-period)](#9-the-optimization-model-single-period)
 10. [Baselines and independent validation](#10-baselines-and-independent-validation)
 11. [Day-by-day planning (multi-period)](#11-day-by-day-planning-multi-period)
+11a. [Second round: scale, robustness, explanations, response time](#11a-second-round-scale-robustness-explanations-response-time)
 12. [Scenarios, Scenario Lab and sensitivity](#12-scenarios-scenario-lab-and-sensitivity)
 13. [The dashboard](#13-the-dashboard)
 14. [Evaluation results](#14-evaluation-results)
@@ -49,10 +50,11 @@ the running app; nothing is estimated or invented.
 | CP-SAT optimizer (lexicographic or weighted), infeasibility diagnosis | Done |
 | Baselines (current, greedy) + independent validator | Done |
 | Optional day-by-day (multi-period) planning mode | Done (merged in PRs #1 and #2) |
+| Scalability benchmark (10–100 zones), robustness check, "what if?" explanations, response-time standard | Done (branch `feature/improvements`) |
 | 4 scenario presets, Scenario Lab, coverage floor, sensitivity analysis | Done |
 | Exports: CSV, JSON run record, Markdown summary | Done |
 | Reproducible evaluation (5 seeds) with committed results | Done |
-| 84 automated tests, ruff lint/format, GitHub Actions CI (Python 3.12 + 3.13) | Done, green |
+| 110 automated tests, ruff lint/format, GitHub Actions CI (Python 3.12 + 3.13) | Done, green |
 | Documentation (README + 7 docs + this report), screenshots | Done |
 | Public GitHub repository | Done — https://github.com/iwan-adler/resourcemind-ai |
 | 11-slide pitch deck with speaker notes | Done (private until shared) |
@@ -64,11 +66,17 @@ the running app; nothing is estimated or invented.
   demand from 118.5 to 24.6.
 * Forecasting: gradient boosting (test MAE 4.65 requests/day) and a 28-day moving average (4.69) are
   effectively tied; both beat seasonal naive (6.23).
-* **In single-period planning, a greedy heuristic matched the optimizer’s weighted unmet demand in all 25
-  runs.** The optimizer still used less travel in 7 of 25 runs, proved optimality, and satisfied an
-  equity floor that greedy violated.
+* **On the 10-zone demo city, a greedy heuristic matched the optimizer’s weighted unmet demand in all 25
+  single-period runs.** The optimizer still used less travel in 7 of 25 runs, proved optimality, and
+  satisfied an equity floor that greedy violated. **That tie is a small-problem effect:** on synthetic
+  cities of 25–100 zones the optimizer beat greedy in every run (by up to 141 weighted requests) and
+  stayed proven optimal in about 1 s.
 * **In day-by-day planning, the optimizer beats greedy** in 3 of 25 runs with the default forecast and
   11 of 20 runs with a weekday-varying forecast. Every gain is under 0.4% of total demand.
+* **With a 20-minute response-time standard,** the optimizer beats greedy in 5 of 20 runs, never loses,
+  and moves far fewer teams.
+* **Under real forecast errors** the optimized plan keeps its advantage (normal: 7% vs 21% chance of a
+  sub-90% week compared with today’s allocation).
 
 ---
 
@@ -100,7 +108,7 @@ codebase a student can understand and defend.
   visualization and UI modules, tied together by `pipeline.run_pipeline`.
 * **`scripts/`** — `generate_data.py` (CSV export), `run_evaluation.py` (multi-seed evaluation →
   `results/`), `smoke_test.py` (health check).
-* **`tests/`** — 84 pytest tests, including headless UI tests with Streamlit’s `AppTest`.
+* **`tests/`** — 110 pytest tests, including headless UI tests with Streamlit’s `AppTest`.
 * **`docs/`** — architecture, mathematical model, data dictionary, evaluation, assumptions & limitations,
   demo script, this report, and screenshots.
 * **`.github/workflows/tests.yml`** — CI on Ubuntu with Python 3.12 and 3.13.
@@ -306,6 +314,51 @@ merged after CI passed; 84 tests pass on the merged `main`.
 
 ---
 
+## 11a. Second round: scale, robustness, explanations, response time
+
+Built on branch `feature/improvements`. All four are optional or additive: with them switched off, every
+earlier evaluation result is reproduced exactly, except one day-by-day run that improved (below).
+
+**Scalability benchmark** (`scripts/benchmark_scalability.py`, `simulation/scaled.py`). Synthetic cities of
+10, 25, 50 and 100 zones with the same structure as the demo data, 3 seeds each.
+
+* Single-period planning: proven optimal at every size, at most 1.2 s at 100 zones (226 teams). The
+  optimizer is ahead of greedy in every run from 25 zones on: by 5.6–34.9 weighted requests at 25 zones,
+  22.3–114.5 at 50 and 33.1–141.1 at 100. The 10-zone tie was a small-problem effect.
+* Day-by-day planning: proven optimal at 10 zones (≤ 3.1 s); from 25 zones it stops at the 20 s-per-stage
+  limit without proof (at most 3.0% from the proven bound at 25 zones, 5.6% at 50). The first benchmark run
+  showed it returning plans 700–2,500 weighted requests *worse* than greedy at 100 zones. Fix: warm-start
+  from the greedy plan, and keep that plan (when it passes the validator) if the solver cannot beat it in
+  time. It is now never worse than greedy; at 100 zones it keeps the greedy plan. The warm start also made
+  the one previously FEASIBLE evaluation run (normal, weekday-varying forecast, seed 42) proven OPTIMAL,
+  with the same weighted unmet and 359 instead of 630 team-minutes of travel.
+* Both optimizers now record CP-SAT’s proven lower bound and the optimality gap.
+
+**Robustness to forecast error** (`simulation/robustness.py`, Strategy evaluation page). Each plan is
+scored against 200 demand outcomes built by resampling whole forecast windows of the model’s real errors
+from the held-out **test** period. Optimized plans keep their advantage: in normal operations a 7% chance
+of a sub-90% week versus 21% for today’s allocation, and 49–61% less expected weighted unmet demand outside
+the shortage case. Planning against the upper forecast did not reliably help (worse in shortage), and a
+sample-average “expected outcome” plan built from validation errors was about the same as the point plan
+(−2.0 to +6.7 weighted unmet). An early version of this test drew both plan-building and scoring errors from
+the same windows; that was caught and corrected before reporting.
+
+**“What if?” explanations** (`allocation/counterfactual.py`, Allocation planner → What if?). Re-solves the
+real model with one move forced or forbidden and reports the exact change. Example (normal, seed 42):
+forbidding either recommended move leaves an equally good plan (+4 and +32 team-minutes of travel), and
+forcing a team from Harbor District to Old Town costs 21.5 weighted requests. Impossible moves are refused
+with the reason (e.g. a 57-minute trip over the 45-minute limit).
+
+**Response-time standard** (`allocation/response.py`, sidebar → Planning settings). Demand counts as covered
+only when a team can reach it within the standard; teams in neighbouring zones can help, sharing their
+capacity. Local response time is 11.1 min on the demo map (from its geometry). With 20 minutes the
+optimizer is OPTIMAL in 20 of 20 runs (≤ 3.2 s), beats greedy in 5 of 20 (by 4.7–32.4 weighted requests),
+never loses, and moves far fewer teams (surge: 1.4 vs 4.0 teams, 33 vs 113 team-minutes). Greedy still
+reasons in-zone, which accounts for part of that advantage. Example: in normal operations the plan becomes
+a single move (Eastfield → Westbrook) and weighted unmet falls from 52.4 to 20.0. Single-period only.
+
+---
+
 ## 12. Scenarios, Scenario Lab and sensitivity
 
 **Presets** (each changes real inputs, not just labels):
@@ -441,7 +494,7 @@ service first). The service-loss model is mild by construction (45-minute limit 
 
 ## 15. Testing, linting and CI
 
-**84 pytest tests**, all passing locally and in CI (a clean install into a fresh virtual environment was
+**110 pytest tests**, all passing locally and in CI (a clean install into a fresh virtual environment was
 also verified, at the 69-test stage):
 
 | File | Tests | Covers |
@@ -454,7 +507,11 @@ also verified, at the 69-test stage):
 | `test_metrics.py` | 7 | known metric values, zero/empty denominators, coverage bounds, fairness consistency, JSON export |
 | `test_integration.py` | 4 | full workflow for every preset, reproducibility, infeasible scenario path, planning basis |
 | `test_multiperiod.py` | 12 | brute force on 2-zone × 2-day cases, travel consuming service, conservation/staging/eligibility, validator, infeasible, zero cases, determinism, greedy validity and optimizer ≥ greedy, look-ahead beating myopic greedy, pipeline daily mode, per-day map matrix, daily sensitivity sweep |
-| `test_app.py` | 8 | every page × scenario renders, disclaimer/status, Scenario Lab submit → INFEASIBLE → reset, sensitivity button, horizon control, deep links, daily mode on every page, daily overview/lab/sensitivity |
+| `test_app.py` | 11 | every page × scenario renders, disclaimer/status, Scenario Lab submit → INFEASIBLE → reset, sensitivity button, horizon control, deep links, daily mode on every page, daily overview/lab/sensitivity, what-if re-plan, robustness button, response-time standard |
+| `test_response.py` | 9 | in-zone special case, neighbour coverage, capacity and weights, standard below local response, brute-force optimality, pipeline validity, unchanged default, daily rejection, robustness/what-if with a standard |
+| `test_robustness.py` | 5 | per-sample scoring, correlated resampling, expected-outcome plan, validation/test residuals kept apart, full check |
+| `test_counterfactual.py` | 6 | forced moves never beat the optimum, exact deltas, refusals with reasons, essential moves, every recommended move explained, bounds on ineligible routes |
+| `test_scaled.py` | 3 | scaled-problem structure, single-period optimal at 50 zones, warm-started day-by-day never worse than greedy |
 
 * **Ruff** lint and format: clean (line length 120).
 * **Smoke test** (`scripts/smoke_test.py`): optimizer OPTIMAL, plan valid, all zones forecast, optimized ≤
@@ -494,6 +551,10 @@ also verified, at the 69-test stage):
 | Headless Edge screenshots captured only a loading skeleton | Drove Edge with Playwright and waited for the app to finish |
 | Day-by-day write-up misstated two percentages | Re-ran the evaluation, recomputed, corrected README and `docs/evaluation.md` |
 | Local merge of PR #1 conflicted with the squash merge already on GitHub | Confirmed the trees were identical, replayed only the doc fix on top; nothing overwritten |
+| Benchmark: day-by-day optimizer returned plans 700–2,500 weighted requests worse than greedy at 100 zones | Warm start from greedy, plus a guarantee: a valid warm-start plan is kept when the solver cannot beat it in time |
+| Warm-start hints were added twice to the same variables (MODEL_INVALID in the travel stage) | Hints are cleared before the second stage; covered by a test |
+| First robustness test scored plans on the same error windows used to build them | Plans are now built from validation errors only and scored on held-out test errors |
+| A formula in `docs/mathematical_model.md` rendered as a line break | Fixed |
 
 ---
 
@@ -524,7 +585,8 @@ python -m venv .venv
 # Windows: .venv\Scripts\activate    macOS/Linux: source .venv/bin/activate
 pip install -r requirements-dev.txt
 streamlit run app.py                    # http://localhost:8501
-pytest                                  # 84 tests
+pytest                                  # 110 tests
+python scripts/benchmark_scalability.py # results/scalability.csv
 ruff check . && ruff format --check .
 python scripts/smoke_test.py
 python scripts/generate_data.py         # data/generated/*.csv
@@ -556,8 +618,9 @@ which could not be done on the owner’s behalf. Steps:
 * **Why lexicographic?** Coverage of emergency demand comes first; travel only breaks ties. No arbitrary
   exchange rate between minutes and unserved people (a weighted mode exists if a planner wants one).
 * **Why does greedy tie the optimizer?** With one decision per week the problem is close to a concave
-  allocation problem, where marginal-gain greedy is often optimal. With day-by-day planning, policy
-  constraints or travel costs, the optimizer pulls ahead, but only modestly on this data.
+  allocation problem, where marginal-gain greedy is often optimal, and the demo city is small. On
+  25–100-zone benchmark cities the optimizer beats greedy in every run; with day-by-day planning, a
+  response-time standard or policy constraints it also pulls ahead.
 * **Why an independent validator?** So a solver bug or a modelling slip can never show a plan that breaks
   constraints; baselines get the same checks.
 * **Why pick the forecast on validation, not test?** Choosing on test would leak and overstate accuracy.
@@ -571,14 +634,17 @@ which could not be done on the owner’s behalf. Steps:
 
 ## 22. Limitations and future work
 
-**Limitations:** synthetic data only; ~20% forecast error; teams treated as identical; no response-time
-targets, queues, backlog or crew-hour rules; the travel service-loss assumption (480-minute shift) is
+**Limitations:** synthetic data only; ~20% forecast error; teams treated as identical; a simplified
+response-time rule (zone-centre travel, one local response time); no queues, backlog or crew-hour rules;
+day-by-day planning does not prove optimality beyond about 10 zones within its time limit; the travel service-loss assumption (480-minute shift) is
 simple; zone-level fairness metrics hide within-zone differences; Windows-ARM64 needs x64 Python.
 
 **Future work (not built):**
 
 1. Deploy to Streamlit Community Cloud and add the live link.
-2. Response-time targets and coverage within a time threshold, not just volume.
-3. Rolling re-planning (re-forecast and re-optimize each day as data arrives).
-4. Validation on real, properly licensed data with domain experts, including an audit for under-reporting.
-5. Stronger probabilistic forecasts (calibrated quantiles) and robust/stochastic optimization.
+2. Richer response-time modelling (traffic, time of day, travel within zones).
+3. A faster day-by-day solver for large cities (decomposition or parallel search).
+4. Rolling re-planning (re-forecast and re-optimize each day as data arrives).
+5. Validation on real, properly licensed data with domain experts, including an audit for under-reporting.
+6. Stronger probabilistic forecasts (calibrated quantiles). A sample-based robust plan was tried and was
+   not reliably better out of sample (see §11a).

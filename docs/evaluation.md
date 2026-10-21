@@ -1,11 +1,11 @@
 # Evaluation
 
 All numbers below were produced by `python scripts/run_evaluation.py` (default seeds 42, 7, 2024, 99, 314)
-on 2026-10-21 (Python 3.14.7, Windows, x64 emulation) in about 123 s (about 22 s before the day-by-day
-cases were added). Raw outputs:
+on 2026-10-21 (Python 3.14.7, Windows, x64 emulation) in about 128 s. Raw outputs:
 `results/evaluation_results.json`, `results/forecast_metrics.csv`, `results/strategy_comparison.csv`,
-`results/summary_by_scenario.csv`. **The data are synthetic**, so these results describe behaviour of the
-method on the generator, not real-world performance.
+`results/summary_by_scenario.csv`, `results/robustness.csv`. The scalability numbers come from
+`python scripts/benchmark_scalability.py` (`results/scalability.csv`). **The data are synthetic**, so these
+results describe behaviour of the method on the generator, not real-world performance.
 
 ## Forecasting
 
@@ -104,7 +104,9 @@ the day-by-day mode was added; only runtimes vary between runs.
   legacy population-based allocation in normal/surge/disruption conditions.
 * **The greedy baseline matched the optimizer's weighted unmet demand in every one of the 25 runs.**
   The problem is close to a concave resource-allocation problem, where marginal-gain greedy is often
-  optimal. The optimizer's measurable advantages here are:
+  optimal, and the 10-zone demo city is small. This is a small-problem effect: on larger synthetic
+  cities the optimizer is ahead of greedy in every run from 25 zones on (see *Scalability*). The
+  optimizer's measurable advantages at this size are:
   1. lower travel for the same service in 7 of 25 runs (e.g. shortage seed 2024: 45 vs 77 team-minutes;
      surge seed 42: 169 vs 190);
   2. a **proof** of optimality (greedy has no guarantee);
@@ -156,7 +158,7 @@ normal: 81.4 vs 80.0 mean unmet for "current") and moving teams lose service whi
 | shortage_floor30_daily | optimized | 370.4 | 499.1 | 80.3% | 82.0 | 3.4 | 0 | 55.2% |
 | normal_daily_seasonal | current | 100.6 | 147.8 | 94.9% | 0 | 0 | 0 | 86.5% |
 | normal_daily_seasonal | greedy | 28.2 | 39.2 | 98.7% | 175.6 | 7.6 | 0 | 96.9% |
-| normal_daily_seasonal | optimized | 27.4 | 38.1 | 98.7% | 207.6 | 8.8 | 0 | 96.7% |
+| normal_daily_seasonal | optimized | 27.4 | 38.1 | 98.7% | 153.4 | 6.8 | 0 | 96.7% |
 | surge_daily_seasonal | current | 373.2 | 521.8 | 83.8% | 0 | 0 | 0 | 61.0% |
 | surge_daily_seasonal | greedy | 188.2 | 256.1 | 92.1% | 302.8 | 11.0 | 0 | 76.7% |
 | surge_daily_seasonal | optimized | 188.0 | 255.1 | 92.1% | 270.6 | 9.8 | 0 | 75.7% |
@@ -191,11 +193,12 @@ better).
 "Optimizer worse" only occurs where the coverage floor binds (seed 42): greedy ignores the floor and
 violates it (21 day-zone violations in daily mode), the optimizer satisfies it.
 
-Optimizer status in daily mode: OPTIMAL in all 25 auto-forecast runs and in 19 of 20 seasonal runs. The
-exception (normal_daily_seasonal, seed 42) proved stage 1 optimal, so its weighted unmet demand is
-optimal, but stage 2 (travel) was only FEASIBLE within the 10 s limit. Runtime per daily optimizer run:
-0.3–1.5 s mean per auto case (maximum 4.7 s), 1.0–3.4 s mean per seasonal case (maximum 14.7 s, the
-FEASIBLE run, whose stage 2 used its full 10 s limit). Day-by-day greedy ≤ 16 ms.
+Optimizer status in daily mode: OPTIMAL in all 45 daily runs. (Before the optimizer was warm-started from
+the greedy plan, one run, normal_daily_seasonal seed 42, only reached FEASIBLE in the travel stage; with
+the warm start it is proven optimal with the same weighted unmet demand and 359 instead of 630
+team-minutes of travel. No other result changed.) Runtime per daily optimizer run: 0.2–1.1 s mean per
+default-forecast case (maximum 3.6 s), 0.7–2.6 s mean per seasonal case (maximum 9.8 s). Day-by-day
+greedy ≤ 9 ms.
 
 ### Honest interpretation
 
@@ -213,8 +216,8 @@ FEASIBLE run, whose stage 2 used its full 10 s limit). Day-by-day greedy ≤ 16 
   moves.
 * **When demand varies by day** (seasonal forecast), greedy re-chases each day's demand: it makes more
   moves (12.0 vs 8.8 per run in shortage) with more travel (317 vs 242 team-minutes) and still leaves more
-  weighted demand unmet. The optimizer can anticipate later days. In normal_daily_seasonal it uses *more*
-  travel than greedy (207.6 vs 175.6) because the lexicographic objective buys extra service first.
+  weighted demand unmet. The optimizer can anticipate later days, and in every seasonal case it now also
+  travels less than greedy (e.g. normal: 153.4 vs 175.6 team-minutes).
 * Worst-zone coverage is not guaranteed to improve: in shortage_daily_seasonal the optimizer's mean
   worst-zone coverage (51.7%) is lower than greedy's (53.9%). As in single-period mode, minimising
   weighted unmet demand is not a fairness guarantee; the per-day coverage floor makes equity explicit.
@@ -222,10 +225,112 @@ FEASIBLE run, whose stage 2 used its full 10 s limit). Day-by-day greedy ≤ 16 
   limit or a shorter effective shift would make movement more expensive and would likely widen the gap;
   that was not measured here.
 
-## Robustness
+## Response-time standard (20 minutes)
+
+Cases `*_response20`: each preset, single-period, with demand counted as covered only when a team can
+reach it within 20 minutes (own zone: 11.1-min local response; 16 neighbouring-zone routes qualify on the
+normal map, fewer under the travel disruption). Mean over 5 seeds:
+
+| Case | Strategy | Weighted unmet | Coverage | Travel (team-min) | Teams moved | Worst zone |
+|---|---|---|---|---|---|---|
+| normal | current | 10.5 | 99.6% | 0 | 0 | 95.7% |
+| normal | greedy | 10.5 | 99.6% | 29.2 | 1.4 | 95.7% |
+| normal | optimized | 4.0 | 99.9% | 4.2 | 0.2 | 97.5% |
+| surge | current | 231.0 | 92.8% | 0 | 0 | 60.2% |
+| surge | greedy | 163.3 | 95.0% | 112.8 | 4.0 | 71.5% |
+| surge | optimized | 160.0 | 95.1% | 33.0 | 1.4 | 70.6% |
+| shortage | current | 476.1 | 80.5% | 0 | 0 | 21.2% |
+| shortage | greedy | 432.7 | 82.5% | 81.4 | 3.6 | 26.0% |
+| shortage | optimized | 427.7 | 82.5% | 35.2 | 1.4 | 20.8% |
+| disruption | current | 36.2 | 98.8% | 0 | 0 | 91.5% |
+| disruption | greedy | 22.7 | 99.2% | 31.4 | 1.4 | 95.1% |
+| disruption | optimized | 22.7 | 99.2% | 10.0 | 0.4 | 95.1% |
+
+* Optimizer status: OPTIMAL in 20 of 20 runs (maximum 3.2 s).
+* **The optimizer beats greedy in 5 of 20 runs** (by 4.7–32.4 weighted requests: normal seed 42: 32.4;
+  shortage seeds 42 and 99: 8.1 and 16.9; surge seeds 7 and 42: 12.0 and 4.7) and ties the rest. It
+  is never worse.
+* It also moves far fewer teams for the same or better result (e.g. surge: 1.4 vs 4.0 teams, 33 vs 113
+  team-minutes), because it knows a neighbouring zone's team can already cover part of the demand.
+  Greedy reasons in-zone, so part of this advantage is that greedy does not see cross-zone coverage.
+* Worst-zone coverage is again not guaranteed: in the shortage case the optimizer's worst zone (20.8%) is
+  lower than greedy's (26.0%).
+* The numbers are not comparable one-to-one with the in-zone results above: the rule for what counts as
+  covered is different (stricter for distant zones, but neighbours can help).
+
+## Robustness to forecast error
+
+`results/robustness.csv`: every single-period plan is scored against 200 demand outcomes resampled from
+the forecast model's real errors on the **held-out test** window (whole forecast windows, so errors stay
+correlated across zones). The expected-outcome plan is built only from **validation** errors. Mean over
+5 seeds:
+
+| Case | Plan | Mean coverage | Bad week (5th pct) | P(coverage < 90%) | Mean weighted unmet |
+|---|---|---|---|---|---|
+| normal | current | 95.0% | 92.8% | 21.4% | 152.5 |
+| normal | greedy / optimized (point) | 98.2% | 96.7% | 7.1% | 58.9 |
+| normal | optimized (upper, cautious) | 98.3% | 97.0% | 5.8% | 55.9 |
+| normal | optimized (expected outcome) | 98.1% | 96.9% | 7.1% | 63.2 |
+| surge | current | 85.0% | 82.3% | 63.9% | 494.0 |
+| surge | greedy / optimized (point) | 92.7% | 90.1% | 20.0% | 250.0 |
+| surge | optimized (upper, cautious) | 92.3% | 89.6% | 20.0% | 259.8 |
+| surge | optimized (expected outcome) | 92.8% | 90.1% | 20.0% | 248.4 |
+| shortage | current | 76.5% | 72.9% | 80.0% | 619.1 |
+| shortage | greedy / optimized (point) | 79.8% | 75.9% | 69.7% | 518.5 |
+| shortage | optimized (upper, cautious) | 77.1% | 74.6% | 80.0% | 561.0 |
+| shortage | optimized (expected outcome) | 79.8% | 75.9% | 69.7% | 516.5 |
+| disruption | current | 95.0% | 92.8% | 21.4% | 152.5 |
+| disruption | greedy | 98.1% | 96.6% | 4.6% | 60.5 |
+| disruption | optimized (point) | 98.1% | 96.5% | 4.6% | 60.5 |
+| disruption | optimized (upper, cautious) | 98.0% | 97.0% | 5.5% | 63.8 |
+| disruption | optimized (expected outcome) | 98.0% | 96.9% | 9.3% | 67.1 |
+
+* **Rebalancing is robust:** under real forecast errors the optimized plan still cuts expected weighted
+  unmet demand by 49–61% versus the current allocation in normal, surge and disruption (16% in shortage,
+  where teams are simply too few), and cuts the chance of a sub-90% week from 21% to 7% in normal
+  operations.
+* **No single "safer" plan wins everywhere.** Planning against the upper forecast helps slightly in normal
+  operations (5.8% vs 7.1% chance of a sub-90% week) but clearly hurts in the shortage case (77.1% vs
+  79.8% mean coverage): inflating every zone's forecast reshuffles teams towards high-priority zones
+  rather than buying robustness.
+* **The expected-outcome plan is about the same as the point plan:** −2.0 weighted unmet in shortage,
+  −1.6 in surge, +4.3 in normal, +6.7 in disruption. Building it from validation errors does not carry
+  over reliably to the test period, and it takes up to ~20 s, so it is optional in the app.
+
+## Scalability
+
+`results/scalability.csv`: synthetic problems with the same structure as the demo data at 10, 25, 50 and
+100 zones (`simulation/scaled.py`), 3 seeds each, one CP-SAT worker, 20 s limit per optimizer stage.
+Gain = greedy − optimizer weighted unmet (positive = optimizer better).
+
+| Mode | Zones | Teams (mean) | Optimizer time (mean / max) | Proven optimal | Gain vs greedy (min–max) | Max gap to bound |
+|---|---|---|---|---|---|---|
+| single | 10 | 20 | 0.05 / 0.05 s | 3 of 3 | 0.0–1.5 | 0% |
+| single | 25 | 57 | 0.25 / 0.31 s | 3 of 3 | 5.6–34.9 | 0% |
+| single | 50 | 117 | 0.39 / 0.45 s | 3 of 3 | 22.3–114.5 | 0% |
+| single | 100 | 226 | 0.98 / 1.21 s | 3 of 3 | 33.1–141.1 | 0% |
+| daily | 10 | 20 | 2.3 / 3.1 s | 3 of 3 | 3.4–4.6 | 0% |
+| daily | 25 | 57 | 36.0 / 40.2 s | 0 of 3 | 18.1–26.8 | 3.0% |
+| daily | 50 | 117 | 40.4 / 40.4 s | 0 of 3 | 12.0–66.4 | 5.6% |
+| daily | 100 | 226 | 40.7 / 40.8 s | 0 of 3 | 0.0–0.0 | 99.3% |
+
+* **Single-period planning scales comfortably** and stays proven optimal at 100 zones in about 1 s.
+* **The greedy tie is a small-problem effect.** At 10 zones greedy is within 1.5 weighted requests of
+  optimal; from 25 zones on the optimizer is ahead in every run, by up to 141 weighted requests at 100
+  zones.
+* **Day-by-day planning is the limit.** From 25 zones it does not prove optimality within the limit (gap to
+  the proven bound up to 5.6% at 50 zones). At 100 zones the solver does not improve on the greedy warm
+  start within the limit, so the greedy plan is kept (gain 0, and the loose bound makes the gap 99%).
+  Before the warm-start guarantee was added, the day-by-day optimizer returned plans about 700–2,500
+  weighted requests *worse* than greedy at this size (with and without a plain solver hint); this
+  benchmark found that problem and it is now fixed.
+* Runtimes depend on hardware; parallel CP-SAT workers would be faster but are not deterministic.
+
+## Scenario coverage
 
 Five data seeds × four presets (+ the coverage-floor case), in both planning modes, plus the four
-seasonal day-by-day cases. All optimized plans passed independent validation; the infeasible-scenario path is exercised by tests (staging capacity × 0.3, coverage floor
+seasonal day-by-day cases and the four response-standard cases. All optimized plans passed independent
+validation; the infeasible-scenario path is exercised by tests (staging capacity × 0.3, coverage floor
 60% under shortage), and the app reports `INFEASIBLE` with reasons.
 
 ## Efficiency

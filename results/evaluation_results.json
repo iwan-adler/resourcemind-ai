@@ -1,5 +1,5 @@
 {
-  "created_at_utc": "2026-10-21T04:42:00+00:00",
+  "created_at_utc": "2026-10-21T14:43:00+00:00",
   "data_provenance": "synthetic",
   "seeds": [
     42,
@@ -20,6 +20,7 @@
     "min_teams_retained": 1,
     "planning_basis": "point",
     "planning_mode": "single",
+    "response_standard_minutes": null,
     "forecast": {
       "lookback_days": 28,
       "validation_days": 28,
@@ -78,7 +79,7 @@
       "travel_minutes": 0.0,
       "teams_moved": 0.0,
       "hard_violations": 0.0,
-      "runtime_ms": 0.026700017042458057,
+      "runtime_ms": 0.012499990407377481,
       "min_zone_coverage": 0.883210630807419
     },
     {
@@ -90,7 +91,7 @@
       "travel_minutes": 29.2,
       "teams_moved": 1.4,
       "hard_violations": 0.0,
-      "runtime_ms": 1.031499996315688,
+      "runtime_ms": 0.973399996291846,
       "min_zone_coverage": 0.9458333333333332
     },
     {
@@ -102,7 +103,7 @@
       "travel_minutes": 29.2,
       "teams_moved": 1.4,
       "hard_violations": 0.0,
-      "runtime_ms": 42.76394001208246,
+      "runtime_ms": 30.70261999964714,
       "min_zone_coverage": 0.9458333333333332
     },
     {
@@ -114,7 +115,7 @@
       "travel_minutes": 0.0,
       "teams_moved": 0.0,
       "hard_violations": 0.0,
-      "runtime_ms": 0.03252000315114856,
+      "runtime_ms": 0.01371998805552721,
       "min_zone_coverage": 0.6202528690191764
     },
     {
@@ -126,7 +127,7 @@
       "travel_minutes": 112.8,
       "teams_moved": 4.0,
       "hard_violations": 0.0,
-      "runtime_ms": 2.979899977799505,
+      "runtime_ms": 1.8387800082564354,
       "min_zone_coverage": 0.7842658306438233
     },
     {
@@ -138,7 +139,7 @@
       "travel_minutes": 107.4,
       "teams_moved": 3.8,
       "hard_violations": 0.0,
-      "runtime_ms": 65.17194000771269,
+      "runtime_ms": 36.00163998780772,
       "min_zone_coverage": 0.7842658306438233
     },
     {
@@ -150,7 +151,7 @@
       "travel_minutes": 0.0,
       "teams_moved": 0.0,
       "hard_violations": 0.0,
-      "runtime_ms": 0.029140012338757515,
+      "runtime_ms": 0.012519990559667349,
       "min_zone_coverage": 0.5201260916834651
     },
     {
@@ -162,7 +163,7 @@
       "travel_minutes": 81.4,
       "teams_moved": 3.6,
       "hard_violations": 0.0,
-      "runtime_ms": 2.0728599978610873,
+      "runtime_ms": 1.0468400083482265,
       "min_zone_coverage": 0.5294039465866092
     },
     {
@@ -174,7 +175,7 @@
       "travel_minutes": 73.6,
       "teams_moved": 3.4,
       "hard_violations": 0.0,
-      "runtime_ms": 78.63288000226021,
+      "runtime_ms": 36.617020005360246,
       "min_zone_coverage": 0.5294039465866092
     },
     {
@@ -186,7 +187,7 @@
       "travel_minutes": 0.0,
       "teams_moved": 0.0,
       "hard_violations": 0.0,
-      "runtime_ms": 0.033840013202279806,
+      "runtime_ms": 0.011740019544959068,
       "min_zone_coverage": 0.883210630807419
     },
     {
@@ -198,7 +199,7 @@
       "travel_minutes": 31.4,
       "teams_moved": 1.4,
       "hard_violations": 0.0,
-      "runtime_ms": 1.0937999933958054,
+      "runtime_ms": 0.4750399966724217,
       "min_zone_coverage": 0.9505376344086022
     },
     {
@@ -210,7 +211,7 @@
       "travel_minutes": 31.4,
       "teams_moved": 1.4,
       "hard_violations": 0.0,
-      "runtime_ms": 50.82770000444725,
+      "runtime_ms": 22.74256000528112,
       "min_zone_coverage": 0.9505376344086022
     },
     {
@@ -222,7 +223,7 @@
       "travel_minutes": 0.0,
       "teams_moved": 0.0,
       "hard_violations": 0.0,
-      "runtime_ms": 0.02671999391168356,
+      "runtime_ms": 0.012819981202483177,
       "min_zone_coverage": 0.5201260916834651
     },
     {
@@ -234,7 +235,7 @@
       "travel_minutes": 81.4,
       "teams_moved": 3.6,
       "hard_violations": 0.6,
-      "runtime_ms": 1.7419400159269571,
+      "runtime_ms": 1.0862599941901863,
       "min_zone_coverage": 0.5294039465866092
     },
     {
@@ -246,7 +247,7 @@
       "travel_minutes": 64.0,
       "teams_moved": 3.0,
       "hard_violations": 0.0,
-      "runtime_ms": 53.60412000445649,
+      "runtime_ms": 31.929900008253753,
       "min_zone_coverage": 0.5442583732057417
     },
     {
@@ -258,7 +259,7 @@
       "travel_minutes": 0.0,
       "teams_moved": 0.0,
       "hard_violations": 0.0,
-      "runtime_ms": 0.13938002521172166,
+      "runtime_ms": 0.0735800014808774,
       "min_zone_coverage": 0.8806960126547756
     },
     {
@@ -270,7 +271,7 @@
       "travel_minutes": 29.2,
       "teams_moved": 1.4,
       "hard_violations": 0.0,
-      "runtime_ms": 5.767599993851036,
+      "runtime_ms": 3.1703799962997437,
       "min_zone_coverage": 0.9428571428571428
     },
     {
@@ -282,7 +283,7 @@
       "travel_minutes": 29.2,
       "teams_moved": 1.4,
       "hard_violations": 0.0,
-      "runtime_ms": 498.3079000143334,
+      "runtime_ms": 337.88559997919947,
       "min_zone_coverage": 0.9428571428571428
     },
     {
@@ -294,7 +295,7 @@
       "travel_minutes": 0.0,
       "teams_moved": 0.0,
       "hard_violations": 0.0,
-      "runtime_ms": 0.16227999003604054,
+      "runtime_ms": 0.07206000154837966,
       "min_zone_coverage": 0.6165265817563038
     },
     {
@@ -306,7 +307,7 @@
       "travel_minutes": 114.8,
       "teams_moved": 4.2,
       "hard_violations": 0.0,
-      "runtime_ms": 5.334960005711764,
+      "runtime_ms": 4.01252000592649,
       "min_zone_coverage": 0.776409218099871
     },
     {
@@ -318,7 +319,7 @@
       "travel_minutes": 113.0,
       "teams_moved": 4.2,
       "hard_violations": 0.0,
-      "runtime_ms": 672.3248999915086,
+      "runtime_ms": 707.5818399898708,
       "min_zone_coverage": 0.776409218099871
     },
     {
@@ -330,7 +331,7 @@
       "travel_minutes": 0.0,
       "teams_moved": 0.0,
       "hard_violations": 0.0,
-      "runtime_ms": 0.1600799965672195,
+      "runtime_ms": 0.07111998274922371,
       "min_zone_coverage": 0.52687991456304
     },
     {
@@ -342,7 +343,7 @@
       "travel_minutes": 97.6,
       "teams_moved": 3.8,
       "hard_violations": 0.0,
-      "runtime_ms": 4.835200007073581,
+      "runtime_ms": 2.6882999925874174,
       "min_zone_coverage": 0.5365864527629234
     },
     {
@@ -354,7 +355,7 @@
       "travel_minutes": 86.2,
       "teams_moved": 3.6,
       "hard_violations": 0.0,
-      "runtime_ms": 1310.4691999964416,
+      "runtime_ms": 677.9076599981636,
       "min_zone_coverage": 0.5365864527629234
     },
     {
@@ -366,7 +367,7 @@
       "travel_minutes": 0.0,
       "teams_moved": 0.0,
       "hard_violations": 0.0,
-      "runtime_ms": 0.1356199849396944,
+      "runtime_ms": 0.07354000117629766,
       "min_zone_coverage": 0.8806960126547756
     },
     {
@@ -378,7 +379,7 @@
       "travel_minutes": 31.4,
       "teams_moved": 1.4,
       "hard_violations": 0.0,
-      "runtime_ms": 3.994320018682629,
+      "runtime_ms": 2.1269000018946826,
       "min_zone_coverage": 0.9481481481481481
     },
     {
@@ -390,7 +391,7 @@
       "travel_minutes": 31.4,
       "teams_moved": 1.4,
       "hard_violations": 0.0,
-      "runtime_ms": 285.5998400016688,
+      "runtime_ms": 195.50552000291646,
       "min_zone_coverage": 0.9481481481481481
     },
     {
@@ -402,7 +403,7 @@
       "travel_minutes": 0.0,
       "teams_moved": 0.0,
       "hard_violations": 0.0,
-      "runtime_ms": 0.1495799981057644,
+      "runtime_ms": 0.07296000840142369,
       "min_zone_coverage": 0.52687991456304
     },
     {
@@ -414,7 +415,7 @@
       "travel_minutes": 97.6,
       "teams_moved": 3.8,
       "hard_violations": 4.2,
-      "runtime_ms": 3.8682399899698794,
+      "runtime_ms": 2.950859977863729,
       "min_zone_coverage": 0.5365864527629234
     },
     {
@@ -426,7 +427,7 @@
       "travel_minutes": 82.0,
       "teams_moved": 3.4,
       "hard_violations": 0.0,
-      "runtime_ms": 1493.3563199942,
+      "runtime_ms": 1074.583199992776,
       "min_zone_coverage": 0.5517379679144385
     },
     {
@@ -438,7 +439,7 @@
       "travel_minutes": 0.0,
       "teams_moved": 0.0,
       "hard_violations": 0.0,
-      "runtime_ms": 0.2781999995931983,
+      "runtime_ms": 0.07355998968705535,
       "min_zone_coverage": 0.8653482836893402
     },
     {
@@ -450,7 +451,7 @@
       "travel_minutes": 175.6,
       "teams_moved": 7.6,
       "hard_violations": 0.0,
-      "runtime_ms": 8.397600008174777,
+      "runtime_ms": 5.36723998375237,
       "min_zone_coverage": 0.9685450276122973
     },
     {
@@ -459,10 +460,10 @@
       "total_unmet": 27.4,
       "weighted_unmet": 38.098,
       "coverage": 0.9872384593734793,
-      "travel_minutes": 207.6,
-      "teams_moved": 8.8,
+      "travel_minutes": 153.4,
+      "teams_moved": 6.8,
       "hard_violations": 0.0,
-      "runtime_ms": 3338.2712400052696,
+      "runtime_ms": 2266.3947399822064,
       "min_zone_coverage": 0.9671149613409333
     },
     {
@@ -474,7 +475,7 @@
       "travel_minutes": 0.0,
       "teams_moved": 0.0,
       "hard_violations": 0.0,
-      "runtime_ms": 0.1551800058223307,
+      "runtime_ms": 0.07398000452667475,
       "min_zone_coverage": 0.6096674690975029
     },
     {
@@ -486,7 +487,7 @@
       "travel_minutes": 302.8,
       "teams_moved": 11.0,
       "hard_violations": 0.0,
-      "runtime_ms": 9.062140004243702,
+      "runtime_ms": 6.091019988525659,
       "min_zone_coverage": 0.7666278594754623
     },
     {
@@ -496,9 +497,9 @@
       "weighted_unmet": 255.092,
       "coverage": 0.9211717606339749,
       "travel_minutes": 270.6,
-      "teams_moved": 9.8,
+      "teams_moved": 10.0,
       "hard_violations": 0.0,
-      "runtime_ms": 1856.0387399978936,
+      "runtime_ms": 1501.567339990288,
       "min_zone_coverage": 0.7572037757058288
     },
     {
@@ -510,7 +511,7 @@
       "travel_minutes": 0.0,
       "teams_moved": 0.0,
       "hard_violations": 0.0,
-      "runtime_ms": 0.148760003503412,
+      "runtime_ms": 0.07152000907808542,
       "min_zone_coverage": 0.52932205785183
     },
     {
@@ -522,7 +523,7 @@
       "travel_minutes": 317.0,
       "teams_moved": 12.0,
       "hard_violations": 0.0,
-      "runtime_ms": 6.487539992667735,
+      "runtime_ms": 4.088679980486631,
       "min_zone_coverage": 0.539048689437316
     },
     {
@@ -534,7 +535,7 @@
       "travel_minutes": 242.4,
       "teams_moved": 8.8,
       "hard_violations": 0.0,
-      "runtime_ms": 3445.3692600131035,
+      "runtime_ms": 2559.4977199914865,
       "min_zone_coverage": 0.5165455288810581
     },
     {
@@ -546,7 +547,7 @@
       "travel_minutes": 0.0,
       "teams_moved": 0.0,
       "hard_violations": 0.0,
-      "runtime_ms": 0.1438399776816368,
+      "runtime_ms": 0.07542000385001302,
       "min_zone_coverage": 0.8653482836893402
     },
     {
@@ -558,7 +559,7 @@
       "travel_minutes": 208.8,
       "teams_moved": 8.0,
       "hard_violations": 0.0,
-      "runtime_ms": 4.178479989059269,
+      "runtime_ms": 3.196740010753274,
       "min_zone_coverage": 0.9340907556692859
     },
     {
@@ -570,8 +571,152 @@
       "travel_minutes": 179.4,
       "teams_moved": 7.0,
       "hard_violations": 0.0,
-      "runtime_ms": 991.933980025351,
+      "runtime_ms": 722.3689600126818,
       "min_zone_coverage": 0.9330436352504377
+    },
+    {
+      "case": "normal_response20",
+      "strategy": "current",
+      "total_unmet": 8.0,
+      "weighted_unmet": 10.48,
+      "coverage": 0.9964061096136568,
+      "travel_minutes": 0.0,
+      "teams_moved": 0.0,
+      "hard_violations": 0.0,
+      "runtime_ms": 0.017200002912431955,
+      "min_zone_coverage": 0.956989247311828
+    },
+    {
+      "case": "normal_response20",
+      "strategy": "greedy",
+      "total_unmet": 8.0,
+      "weighted_unmet": 10.48,
+      "coverage": 0.9964061096136568,
+      "travel_minutes": 29.2,
+      "teams_moved": 1.4,
+      "hard_violations": 0.0,
+      "runtime_ms": 0.9097800124436617,
+      "min_zone_coverage": 0.956989247311828
+    },
+    {
+      "case": "normal_response20",
+      "strategy": "optimized",
+      "total_unmet": 3.2,
+      "weighted_unmet": 4.0,
+      "coverage": 0.9985624438454627,
+      "travel_minutes": 4.2,
+      "teams_moved": 0.2,
+      "hard_violations": 0.0,
+      "runtime_ms": 657.7491400181316,
+      "min_zone_coverage": 0.9746031746031747
+    },
+    {
+      "case": "surge_response20",
+      "strategy": "current",
+      "total_unmet": 170.8,
+      "weighted_unmet": 231.01799999999997,
+      "coverage": 0.9275716396901987,
+      "travel_minutes": 0.0,
+      "teams_moved": 0.0,
+      "hard_violations": 0.0,
+      "runtime_ms": 0.015460012946277857,
+      "min_zone_coverage": 0.6017889871787813
+    },
+    {
+      "case": "surge_response20",
+      "strategy": "greedy",
+      "total_unmet": 123.4,
+      "weighted_unmet": 163.28799999999998,
+      "coverage": 0.9499497827682675,
+      "travel_minutes": 112.8,
+      "teams_moved": 4.0,
+      "hard_violations": 0.0,
+      "runtime_ms": 1.8845399841666222,
+      "min_zone_coverage": 0.7146220134395221
+    },
+    {
+      "case": "surge_response20",
+      "strategy": "optimized",
+      "total_unmet": 121.0,
+      "weighted_unmet": 159.95,
+      "coverage": 0.951052723944738,
+      "travel_minutes": 33.0,
+      "teams_moved": 1.4,
+      "hard_violations": 0.0,
+      "runtime_ms": 144.96651998488232,
+      "min_zone_coverage": 0.7064607815554641
+    },
+    {
+      "case": "shortage_response20",
+      "strategy": "current",
+      "total_unmet": 360.6,
+      "weighted_unmet": 476.11400000000003,
+      "coverage": 0.8046993324806268,
+      "travel_minutes": 0.0,
+      "teams_moved": 0.0,
+      "hard_violations": 0.0,
+      "runtime_ms": 0.015580013860017061,
+      "min_zone_coverage": 0.2117140944863717
+    },
+    {
+      "case": "shortage_response20",
+      "strategy": "greedy",
+      "total_unmet": 334.6,
+      "weighted_unmet": 432.678,
+      "coverage": 0.8250819431426202,
+      "travel_minutes": 81.4,
+      "teams_moved": 3.6,
+      "hard_violations": 0.0,
+      "runtime_ms": 1.0790999862365425,
+      "min_zone_coverage": 0.25976689976689976
+    },
+    {
+      "case": "shortage_response20",
+      "strategy": "optimized",
+      "total_unmet": 334.8,
+      "weighted_unmet": 427.6719999999999,
+      "coverage": 0.8249519886267007,
+      "travel_minutes": 35.2,
+      "teams_moved": 1.4,
+      "hard_violations": 0.0,
+      "runtime_ms": 147.66790001885965,
+      "min_zone_coverage": 0.2084848484848485
+    },
+    {
+      "case": "disruption_response20",
+      "strategy": "current",
+      "total_unmet": 26.4,
+      "weighted_unmet": 36.224,
+      "coverage": 0.9875892201531509,
+      "travel_minutes": 0.0,
+      "teams_moved": 0.0,
+      "hard_violations": 0.0,
+      "runtime_ms": 0.016119994688779116,
+      "min_zone_coverage": 0.9152173913043479
+    },
+    {
+      "case": "disruption_response20",
+      "strategy": "greedy",
+      "total_unmet": 16.8,
+      "weighted_unmet": 22.732,
+      "coverage": 0.9924528301886791,
+      "travel_minutes": 31.4,
+      "teams_moved": 1.4,
+      "hard_violations": 0.0,
+      "runtime_ms": 0.5053999833762646,
+      "min_zone_coverage": 0.9505376344086022
+    },
+    {
+      "case": "disruption_response20",
+      "strategy": "optimized",
+      "total_unmet": 16.8,
+      "weighted_unmet": 22.732,
+      "coverage": 0.9924528301886791,
+      "travel_minutes": 10.0,
+      "teams_moved": 0.4,
+      "hard_violations": 0.0,
+      "runtime_ms": 34.339239983819425,
+      "min_zone_coverage": 0.9505376344086022
     }
   ],
   "optimizer_status_counts": [
@@ -591,6 +736,11 @@
       "runs": 5
     },
     {
+      "case": "disruption_response20",
+      "status": "OPTIMAL",
+      "runs": 5
+    },
+    {
       "case": "normal",
       "status": "OPTIMAL",
       "runs": 5
@@ -602,13 +752,13 @@
     },
     {
       "case": "normal_daily_seasonal",
-      "status": "FEASIBLE",
-      "runs": 1
+      "status": "OPTIMAL",
+      "runs": 5
     },
     {
-      "case": "normal_daily_seasonal",
+      "case": "normal_response20",
       "status": "OPTIMAL",
-      "runs": 4
+      "runs": 5
     },
     {
       "case": "shortage",
@@ -636,6 +786,11 @@
       "runs": 5
     },
     {
+      "case": "shortage_response20",
+      "status": "OPTIMAL",
+      "runs": 5
+    },
+    {
       "case": "surge",
       "status": "OPTIMAL",
       "runs": 5
@@ -647,6 +802,11 @@
     },
     {
       "case": "surge_daily_seasonal",
+      "status": "OPTIMAL",
+      "runs": 5
+    },
+    {
+      "case": "surge_response20",
       "status": "OPTIMAL",
       "runs": 5
     }
@@ -791,6 +951,228 @@
       "tie_and_less_travel": 1,
       "mean_weighted_unmet_gap": 0.8100000000000008,
       "max_weighted_unmet_gap": 2.3700000000000045
+    },
+    {
+      "case": "normal_response20",
+      "runs": 5,
+      "optimizer_better": 1,
+      "tie": 4,
+      "optimizer_worse": 0,
+      "tie_and_less_travel": 2,
+      "mean_weighted_unmet_gap": 6.480000000000001,
+      "max_weighted_unmet_gap": 32.400000000000006
+    },
+    {
+      "case": "surge_response20",
+      "runs": 5,
+      "optimizer_better": 2,
+      "tie": 3,
+      "optimizer_worse": 0,
+      "tie_and_less_travel": 2,
+      "mean_weighted_unmet_gap": 3.3380000000000103,
+      "max_weighted_unmet_gap": 11.990000000000006
+    },
+    {
+      "case": "shortage_response20",
+      "runs": 5,
+      "optimizer_better": 2,
+      "tie": 3,
+      "optimizer_worse": 0,
+      "tie_and_less_travel": 3,
+      "mean_weighted_unmet_gap": 5.006000000000034,
+      "max_weighted_unmet_gap": 16.930000000000035
+    },
+    {
+      "case": "disruption_response20",
+      "runs": 5,
+      "optimizer_better": 0,
+      "tie": 5,
+      "optimizer_worse": 0,
+      "tie_and_less_travel": 3,
+      "mean_weighted_unmet_gap": 0.0,
+      "max_weighted_unmet_gap": -0.0
+    }
+  ],
+  "robustness_mean_over_seeds": [
+    {
+      "case": "normal",
+      "strategy": "current",
+      "mean_coverage": 0.9501494453723509,
+      "p05_coverage": 0.9283178813176184,
+      "prob_below_target": 0.21400000000000002,
+      "mean_weighted_unmet": 152.52708,
+      "mean_worst_zone": 0.8552501494912962
+    },
+    {
+      "case": "normal",
+      "strategy": "greedy",
+      "mean_coverage": 0.9817474681302345,
+      "p05_coverage": 0.9666581115968986,
+      "prob_below_target": 0.071,
+      "mean_weighted_unmet": 58.94340999999999,
+      "mean_worst_zone": 0.9173947063490979
+    },
+    {
+      "case": "normal",
+      "strategy": "optimized_point",
+      "mean_coverage": 0.9817474681302345,
+      "p05_coverage": 0.9666581115968986,
+      "prob_below_target": 0.071,
+      "mean_weighted_unmet": 58.94340999999999,
+      "mean_worst_zone": 0.9173947063490979
+    },
+    {
+      "case": "normal",
+      "strategy": "optimized_upper",
+      "mean_coverage": 0.9828385404056516,
+      "p05_coverage": 0.9698842608231917,
+      "prob_below_target": 0.057999999999999996,
+      "mean_weighted_unmet": 55.87506,
+      "mean_worst_zone": 0.9036130844447573
+    },
+    {
+      "case": "normal",
+      "strategy": "optimized_expected",
+      "mean_coverage": 0.981437687547205,
+      "p05_coverage": 0.9692856569847301,
+      "prob_below_target": 0.071,
+      "mean_weighted_unmet": 63.19933999999999,
+      "mean_worst_zone": 0.9156148485747906
+    },
+    {
+      "case": "surge",
+      "strategy": "current",
+      "mean_coverage": 0.8497582403713263,
+      "p05_coverage": 0.8228814055873273,
+      "prob_below_target": 0.639,
+      "mean_weighted_unmet": 493.99413000000004,
+      "mean_worst_zone": 0.5886605845777199
+    },
+    {
+      "case": "surge",
+      "strategy": "greedy",
+      "mean_coverage": 0.9266089590918067,
+      "p05_coverage": 0.901326092865891,
+      "prob_below_target": 0.2,
+      "mean_weighted_unmet": 249.99958999999998,
+      "mean_worst_zone": 0.732725764976452
+    },
+    {
+      "case": "surge",
+      "strategy": "optimized_point",
+      "mean_coverage": 0.9266089590918067,
+      "p05_coverage": 0.901326092865891,
+      "prob_below_target": 0.2,
+      "mean_weighted_unmet": 249.99958999999998,
+      "mean_worst_zone": 0.732725764976452
+    },
+    {
+      "case": "surge",
+      "strategy": "optimized_upper",
+      "mean_coverage": 0.9227518881974313,
+      "p05_coverage": 0.8957102715074846,
+      "prob_below_target": 0.2,
+      "mean_weighted_unmet": 259.76059999999995,
+      "mean_worst_zone": 0.6805828617105635
+    },
+    {
+      "case": "surge",
+      "strategy": "optimized_expected",
+      "mean_coverage": 0.9278778496595412,
+      "p05_coverage": 0.9013605548284997,
+      "prob_below_target": 0.2,
+      "mean_weighted_unmet": 248.40247000000005,
+      "mean_worst_zone": 0.7772245430246182
+    },
+    {
+      "case": "shortage",
+      "strategy": "current",
+      "mean_coverage": 0.7646297755089455,
+      "p05_coverage": 0.7292424428293982,
+      "prob_below_target": 0.8,
+      "mean_weighted_unmet": 619.12572,
+      "mean_worst_zone": 0.5275722416990087
+    },
+    {
+      "case": "shortage",
+      "strategy": "greedy",
+      "mean_coverage": 0.7976162750241922,
+      "p05_coverage": 0.7591941916410817,
+      "prob_below_target": 0.697,
+      "mean_weighted_unmet": 518.46671,
+      "mean_worst_zone": 0.4928188882783401
+    },
+    {
+      "case": "shortage",
+      "strategy": "optimized_point",
+      "mean_coverage": 0.7976162750241922,
+      "p05_coverage": 0.7591941916410817,
+      "prob_below_target": 0.697,
+      "mean_weighted_unmet": 518.46671,
+      "mean_worst_zone": 0.4928188882783401
+    },
+    {
+      "case": "shortage",
+      "strategy": "optimized_upper",
+      "mean_coverage": 0.7713774539613218,
+      "p05_coverage": 0.7461957045003308,
+      "prob_below_target": 0.8,
+      "mean_weighted_unmet": 561.04395,
+      "mean_worst_zone": 0.4066028033449582
+    },
+    {
+      "case": "shortage",
+      "strategy": "optimized_expected",
+      "mean_coverage": 0.7982932848253215,
+      "p05_coverage": 0.7593149936462572,
+      "prob_below_target": 0.697,
+      "mean_weighted_unmet": 516.52967,
+      "mean_worst_zone": 0.49439791323675986
+    },
+    {
+      "case": "disruption",
+      "strategy": "current",
+      "mean_coverage": 0.9501494453723509,
+      "p05_coverage": 0.9283178813176184,
+      "prob_below_target": 0.21400000000000002,
+      "mean_weighted_unmet": 152.52708,
+      "mean_worst_zone": 0.8552501494912962
+    },
+    {
+      "case": "disruption",
+      "strategy": "greedy",
+      "mean_coverage": 0.9807736728474369,
+      "p05_coverage": 0.9656709394412489,
+      "prob_below_target": 0.046,
+      "mean_weighted_unmet": 60.45257,
+      "mean_worst_zone": 0.9223758661793079
+    },
+    {
+      "case": "disruption",
+      "strategy": "optimized_point",
+      "mean_coverage": 0.9807637456469076,
+      "p05_coverage": 0.9652937058211298,
+      "prob_below_target": 0.046,
+      "mean_weighted_unmet": 60.468770000000006,
+      "mean_worst_zone": 0.9222709710744128
+    },
+    {
+      "case": "disruption",
+      "strategy": "optimized_upper",
+      "mean_coverage": 0.9798751173130847,
+      "p05_coverage": 0.9699387938123483,
+      "prob_below_target": 0.05500000000000001,
+      "mean_weighted_unmet": 63.769850000000005,
+      "mean_worst_zone": 0.8566356687440144
+    },
+    {
+      "case": "disruption",
+      "strategy": "optimized_expected",
+      "mean_coverage": 0.9796487028464987,
+      "p05_coverage": 0.9686278509574764,
+      "prob_below_target": 0.093,
+      "mean_weighted_unmet": 67.12377000000001,
+      "mean_worst_zone": 0.9220869728446364
     }
   ],
   "runs": [
@@ -798,8 +1180,8 @@
       "seed": 42,
       "case": "normal",
       "planning_mode": "single",
-      "forecast_evaluation_seconds": 3.866223599994555,
-      "end_to_end_seconds_excluding_forecast_eval": 0.3803589000017382,
+      "forecast_evaluation_seconds": 1.7665455000242218,
+      "end_to_end_seconds_excluding_forecast_eval": 0.18742349999956787,
       "changes": [],
       "optimizer_status": "OPTIMAL",
       "optimizer_stage_statuses": {
@@ -811,8 +1193,8 @@
       "seed": 42,
       "case": "surge",
       "planning_mode": "single",
-      "forecast_evaluation_seconds": 3.866223599994555,
-      "end_to_end_seconds_excluding_forecast_eval": 0.6980388999800198,
+      "forecast_evaluation_seconds": 1.7665455000242218,
+      "end_to_end_seconds_excluding_forecast_eval": 0.2195174999651499,
       "changes": [
         "History: last 7 days x1.9 in Z05, Z06, Z09",
         "Forecast stress test Z05: x1.25",
@@ -829,8 +1211,8 @@
       "seed": 42,
       "case": "shortage",
       "planning_mode": "single",
-      "forecast_evaluation_seconds": 3.866223599994555,
-      "end_to_end_seconds_excluding_forecast_eval": 0.9400343999732286,
+      "forecast_evaluation_seconds": 1.7665455000242218,
+      "end_to_end_seconds_excluding_forecast_eval": 0.190311600046698,
       "changes": [
         "Resources: x0.6 -> 19 of 32 teams available"
       ],
@@ -844,8 +1226,8 @@
       "seed": 42,
       "case": "disruption",
       "planning_mode": "single",
-      "forecast_evaluation_seconds": 3.866223599994555,
-      "end_to_end_seconds_excluding_forecast_eval": 0.4281635000370443,
+      "forecast_evaluation_seconds": 1.7665455000242218,
+      "end_to_end_seconds_excluding_forecast_eval": 0.19391289999475703,
       "changes": [
         "Cross-river travel: x3",
         "Inaccessible zones: Z02"
@@ -860,8 +1242,8 @@
       "seed": 42,
       "case": "shortage_floor30",
       "planning_mode": "single",
-      "forecast_evaluation_seconds": 3.866223599994555,
-      "end_to_end_seconds_excluding_forecast_eval": 0.4675466999760829,
+      "forecast_evaluation_seconds": 1.7665455000242218,
+      "end_to_end_seconds_excluding_forecast_eval": 0.19500690000131726,
       "changes": [
         "Resources: x0.6 -> 19 of 32 teams available",
         "Coverage floor: every zone >= 30% of servable demand"
@@ -876,8 +1258,8 @@
       "seed": 42,
       "case": "normal_daily",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 3.866223599994555,
-      "end_to_end_seconds_excluding_forecast_eval": 0.9913908999878913,
+      "forecast_evaluation_seconds": 1.7665455000242218,
+      "end_to_end_seconds_excluding_forecast_eval": 0.6236198000260629,
       "changes": [],
       "optimizer_status": "OPTIMAL",
       "optimizer_stage_statuses": {
@@ -889,8 +1271,8 @@
       "seed": 42,
       "case": "surge_daily",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 3.866223599994555,
-      "end_to_end_seconds_excluding_forecast_eval": 1.0703311000252143,
+      "forecast_evaluation_seconds": 1.7665455000242218,
+      "end_to_end_seconds_excluding_forecast_eval": 0.6018116999766789,
       "changes": [
         "History: last 7 days x1.9 in Z05, Z06, Z09",
         "Forecast stress test Z05: x1.25",
@@ -907,8 +1289,8 @@
       "seed": 42,
       "case": "shortage_daily",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 3.866223599994555,
-      "end_to_end_seconds_excluding_forecast_eval": 1.1536982000106946,
+      "forecast_evaluation_seconds": 1.7665455000242218,
+      "end_to_end_seconds_excluding_forecast_eval": 0.7169174999580719,
       "changes": [
         "Resources: x0.6 -> 19 of 32 teams available"
       ],
@@ -922,8 +1304,8 @@
       "seed": 42,
       "case": "disruption_daily",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 3.866223599994555,
-      "end_to_end_seconds_excluding_forecast_eval": 0.6470926000038162,
+      "forecast_evaluation_seconds": 1.7665455000242218,
+      "end_to_end_seconds_excluding_forecast_eval": 0.3741262999828905,
       "changes": [
         "Cross-river travel: x3",
         "Inaccessible zones: Z02"
@@ -938,8 +1320,8 @@
       "seed": 42,
       "case": "shortage_floor30_daily",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 3.866223599994555,
-      "end_to_end_seconds_excluding_forecast_eval": 1.3293407000019215,
+      "forecast_evaluation_seconds": 1.7665455000242218,
+      "end_to_end_seconds_excluding_forecast_eval": 0.739597900013905,
       "changes": [
         "Resources: x0.6 -> 19 of 32 teams available",
         "Coverage floor: every zone >= 30% of servable demand"
@@ -954,21 +1336,21 @@
       "seed": 42,
       "case": "normal_daily_seasonal",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 3.866223599994555,
-      "end_to_end_seconds_excluding_forecast_eval": 15.051233700010926,
+      "forecast_evaluation_seconds": 1.7665455000242218,
+      "end_to_end_seconds_excluding_forecast_eval": 9.98973010003101,
       "changes": [],
-      "optimizer_status": "FEASIBLE",
+      "optimizer_status": "OPTIMAL",
       "optimizer_stage_statuses": {
         "1_weighted_unmet": "OPTIMAL",
-        "2_travel_minutes": "FEASIBLE"
+        "2_travel_minutes": "OPTIMAL"
       }
     },
     {
       "seed": 42,
       "case": "surge_daily_seasonal",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 3.866223599994555,
-      "end_to_end_seconds_excluding_forecast_eval": 4.910748600028455,
+      "forecast_evaluation_seconds": 1.7665455000242218,
+      "end_to_end_seconds_excluding_forecast_eval": 2.723303099977784,
       "changes": [
         "History: last 7 days x1.9 in Z05, Z06, Z09",
         "Forecast stress test Z05: x1.25",
@@ -985,8 +1367,8 @@
       "seed": 42,
       "case": "shortage_daily_seasonal",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 3.866223599994555,
-      "end_to_end_seconds_excluding_forecast_eval": 2.397464400040917,
+      "forecast_evaluation_seconds": 1.7665455000242218,
+      "end_to_end_seconds_excluding_forecast_eval": 1.2000220000045374,
       "changes": [
         "Resources: x0.6 -> 19 of 32 teams available"
       ],
@@ -1000,8 +1382,70 @@
       "seed": 42,
       "case": "disruption_daily_seasonal",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 3.866223599994555,
-      "end_to_end_seconds_excluding_forecast_eval": 3.4519803000148386,
+      "forecast_evaluation_seconds": 1.7665455000242218,
+      "end_to_end_seconds_excluding_forecast_eval": 2.5678811999969184,
+      "changes": [
+        "Cross-river travel: x3",
+        "Inaccessible zones: Z02"
+      ],
+      "optimizer_status": "OPTIMAL",
+      "optimizer_stage_statuses": {
+        "1_weighted_unmet": "OPTIMAL",
+        "2_travel_minutes": "OPTIMAL"
+      }
+    },
+    {
+      "seed": 42,
+      "case": "normal_response20",
+      "planning_mode": "single",
+      "forecast_evaluation_seconds": 1.7665455000242218,
+      "end_to_end_seconds_excluding_forecast_eval": 3.36479069996858,
+      "changes": [],
+      "optimizer_status": "OPTIMAL",
+      "optimizer_stage_statuses": {
+        "1_weighted_unmet": "OPTIMAL",
+        "2_travel_minutes": "OPTIMAL"
+      }
+    },
+    {
+      "seed": 42,
+      "case": "surge_response20",
+      "planning_mode": "single",
+      "forecast_evaluation_seconds": 1.7665455000242218,
+      "end_to_end_seconds_excluding_forecast_eval": 0.5218801999581046,
+      "changes": [
+        "History: last 7 days x1.9 in Z05, Z06, Z09",
+        "Forecast stress test Z05: x1.25",
+        "Forecast stress test Z06: x1.25",
+        "Forecast stress test Z09: x1.25"
+      ],
+      "optimizer_status": "OPTIMAL",
+      "optimizer_stage_statuses": {
+        "1_weighted_unmet": "OPTIMAL",
+        "2_travel_minutes": "OPTIMAL"
+      }
+    },
+    {
+      "seed": 42,
+      "case": "shortage_response20",
+      "planning_mode": "single",
+      "forecast_evaluation_seconds": 1.7665455000242218,
+      "end_to_end_seconds_excluding_forecast_eval": 0.22194419999141246,
+      "changes": [
+        "Resources: x0.6 -> 19 of 32 teams available"
+      ],
+      "optimizer_status": "OPTIMAL",
+      "optimizer_stage_statuses": {
+        "1_weighted_unmet": "OPTIMAL",
+        "2_travel_minutes": "OPTIMAL"
+      }
+    },
+    {
+      "seed": 42,
+      "case": "disruption_response20",
+      "planning_mode": "single",
+      "forecast_evaluation_seconds": 1.7665455000242218,
+      "end_to_end_seconds_excluding_forecast_eval": 0.21669359999941662,
       "changes": [
         "Cross-river travel: x3",
         "Inaccessible zones: Z02"
@@ -1016,8 +1460,8 @@
       "seed": 7,
       "case": "normal",
       "planning_mode": "single",
-      "forecast_evaluation_seconds": 2.431423200003337,
-      "end_to_end_seconds_excluding_forecast_eval": 0.31727229995885864,
+      "forecast_evaluation_seconds": 1.7848535000230186,
+      "end_to_end_seconds_excluding_forecast_eval": 0.24923960003070533,
       "changes": [],
       "optimizer_status": "OPTIMAL",
       "optimizer_stage_statuses": {
@@ -1029,8 +1473,8 @@
       "seed": 7,
       "case": "surge",
       "planning_mode": "single",
-      "forecast_evaluation_seconds": 2.431423200003337,
-      "end_to_end_seconds_excluding_forecast_eval": 0.42559800000162795,
+      "forecast_evaluation_seconds": 1.7848535000230186,
+      "end_to_end_seconds_excluding_forecast_eval": 0.23123599996324629,
       "changes": [
         "History: last 7 days x1.9 in Z05, Z06, Z09",
         "Forecast stress test Z05: x1.25",
@@ -1047,8 +1491,8 @@
       "seed": 7,
       "case": "shortage",
       "planning_mode": "single",
-      "forecast_evaluation_seconds": 2.431423200003337,
-      "end_to_end_seconds_excluding_forecast_eval": 0.35181520000332966,
+      "forecast_evaluation_seconds": 1.7848535000230186,
+      "end_to_end_seconds_excluding_forecast_eval": 0.18159710004692897,
       "changes": [
         "Resources: x0.6 -> 19 of 32 teams available"
       ],
@@ -1062,8 +1506,8 @@
       "seed": 7,
       "case": "disruption",
       "planning_mode": "single",
-      "forecast_evaluation_seconds": 2.431423200003337,
-      "end_to_end_seconds_excluding_forecast_eval": 0.3333000999991782,
+      "forecast_evaluation_seconds": 1.7848535000230186,
+      "end_to_end_seconds_excluding_forecast_eval": 0.19551799999317154,
       "changes": [
         "Cross-river travel: x3",
         "Inaccessible zones: Z02"
@@ -1078,8 +1522,8 @@
       "seed": 7,
       "case": "shortage_floor30",
       "planning_mode": "single",
-      "forecast_evaluation_seconds": 2.431423200003337,
-      "end_to_end_seconds_excluding_forecast_eval": 0.30419850000180304,
+      "forecast_evaluation_seconds": 1.7848535000230186,
+      "end_to_end_seconds_excluding_forecast_eval": 0.1729166000150144,
       "changes": [
         "Resources: x0.6 -> 19 of 32 teams available",
         "Coverage floor: every zone >= 30% of servable demand"
@@ -1094,8 +1538,8 @@
       "seed": 7,
       "case": "normal_daily",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 2.431423200003337,
-      "end_to_end_seconds_excluding_forecast_eval": 0.7938637000042945,
+      "forecast_evaluation_seconds": 1.7848535000230186,
+      "end_to_end_seconds_excluding_forecast_eval": 0.4740633000037633,
       "changes": [],
       "optimizer_status": "OPTIMAL",
       "optimizer_stage_statuses": {
@@ -1107,8 +1551,8 @@
       "seed": 7,
       "case": "surge_daily",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 2.431423200003337,
-      "end_to_end_seconds_excluding_forecast_eval": 1.7000347999855876,
+      "forecast_evaluation_seconds": 1.7848535000230186,
+      "end_to_end_seconds_excluding_forecast_eval": 2.1942640999914147,
       "changes": [
         "History: last 7 days x1.9 in Z05, Z06, Z09",
         "Forecast stress test Z05: x1.25",
@@ -1125,8 +1569,8 @@
       "seed": 7,
       "case": "shortage_daily",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 2.431423200003337,
-      "end_to_end_seconds_excluding_forecast_eval": 0.9136324999853969,
+      "forecast_evaluation_seconds": 1.7848535000230186,
+      "end_to_end_seconds_excluding_forecast_eval": 0.5754866999923252,
       "changes": [
         "Resources: x0.6 -> 19 of 32 teams available"
       ],
@@ -1140,8 +1584,8 @@
       "seed": 7,
       "case": "disruption_daily",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 2.431423200003337,
-      "end_to_end_seconds_excluding_forecast_eval": 0.6862625000067055,
+      "forecast_evaluation_seconds": 1.7848535000230186,
+      "end_to_end_seconds_excluding_forecast_eval": 0.36982359999092296,
       "changes": [
         "Cross-river travel: x3",
         "Inaccessible zones: Z02"
@@ -1156,8 +1600,8 @@
       "seed": 7,
       "case": "shortage_floor30_daily",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 2.431423200003337,
-      "end_to_end_seconds_excluding_forecast_eval": 0.8877757999580353,
+      "forecast_evaluation_seconds": 1.7848535000230186,
+      "end_to_end_seconds_excluding_forecast_eval": 0.5193020000006072,
       "changes": [
         "Resources: x0.6 -> 19 of 32 teams available",
         "Coverage floor: every zone >= 30% of servable demand"
@@ -1172,8 +1616,8 @@
       "seed": 7,
       "case": "normal_daily_seasonal",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 2.431423200003337,
-      "end_to_end_seconds_excluding_forecast_eval": 1.0442882999777794,
+      "forecast_evaluation_seconds": 1.7848535000230186,
+      "end_to_end_seconds_excluding_forecast_eval": 0.807807800010778,
       "changes": [],
       "optimizer_status": "OPTIMAL",
       "optimizer_stage_statuses": {
@@ -1185,8 +1629,8 @@
       "seed": 7,
       "case": "surge_daily_seasonal",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 2.431423200003337,
-      "end_to_end_seconds_excluding_forecast_eval": 3.335588999965694,
+      "forecast_evaluation_seconds": 1.7848535000230186,
+      "end_to_end_seconds_excluding_forecast_eval": 4.043837400036864,
       "changes": [
         "History: last 7 days x1.9 in Z05, Z06, Z09",
         "Forecast stress test Z05: x1.25",
@@ -1203,8 +1647,8 @@
       "seed": 7,
       "case": "shortage_daily_seasonal",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 2.431423200003337,
-      "end_to_end_seconds_excluding_forecast_eval": 4.360222399991471,
+      "forecast_evaluation_seconds": 1.7848535000230186,
+      "end_to_end_seconds_excluding_forecast_eval": 2.2210718999849632,
       "changes": [
         "Resources: x0.6 -> 19 of 32 teams available"
       ],
@@ -1218,8 +1662,70 @@
       "seed": 7,
       "case": "disruption_daily_seasonal",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 2.431423200003337,
-      "end_to_end_seconds_excluding_forecast_eval": 1.239657600002829,
+      "forecast_evaluation_seconds": 1.7848535000230186,
+      "end_to_end_seconds_excluding_forecast_eval": 0.7645823999773711,
+      "changes": [
+        "Cross-river travel: x3",
+        "Inaccessible zones: Z02"
+      ],
+      "optimizer_status": "OPTIMAL",
+      "optimizer_stage_statuses": {
+        "1_weighted_unmet": "OPTIMAL",
+        "2_travel_minutes": "OPTIMAL"
+      }
+    },
+    {
+      "seed": 7,
+      "case": "normal_response20",
+      "planning_mode": "single",
+      "forecast_evaluation_seconds": 1.7848535000230186,
+      "end_to_end_seconds_excluding_forecast_eval": 0.23324169998522848,
+      "changes": [],
+      "optimizer_status": "OPTIMAL",
+      "optimizer_stage_statuses": {
+        "1_weighted_unmet": "OPTIMAL",
+        "2_travel_minutes": "OPTIMAL"
+      }
+    },
+    {
+      "seed": 7,
+      "case": "surge_response20",
+      "planning_mode": "single",
+      "forecast_evaluation_seconds": 1.7848535000230186,
+      "end_to_end_seconds_excluding_forecast_eval": 0.5054926999728195,
+      "changes": [
+        "History: last 7 days x1.9 in Z05, Z06, Z09",
+        "Forecast stress test Z05: x1.25",
+        "Forecast stress test Z06: x1.25",
+        "Forecast stress test Z09: x1.25"
+      ],
+      "optimizer_status": "OPTIMAL",
+      "optimizer_stage_statuses": {
+        "1_weighted_unmet": "OPTIMAL",
+        "2_travel_minutes": "OPTIMAL"
+      }
+    },
+    {
+      "seed": 7,
+      "case": "shortage_response20",
+      "planning_mode": "single",
+      "forecast_evaluation_seconds": 1.7848535000230186,
+      "end_to_end_seconds_excluding_forecast_eval": 0.2328733999747783,
+      "changes": [
+        "Resources: x0.6 -> 19 of 32 teams available"
+      ],
+      "optimizer_status": "OPTIMAL",
+      "optimizer_stage_statuses": {
+        "1_weighted_unmet": "OPTIMAL",
+        "2_travel_minutes": "OPTIMAL"
+      }
+    },
+    {
+      "seed": 7,
+      "case": "disruption_response20",
+      "planning_mode": "single",
+      "forecast_evaluation_seconds": 1.7848535000230186,
+      "end_to_end_seconds_excluding_forecast_eval": 0.20850060001248494,
       "changes": [
         "Cross-river travel: x3",
         "Inaccessible zones: Z02"
@@ -1234,8 +1740,8 @@
       "seed": 2024,
       "case": "normal",
       "planning_mode": "single",
-      "forecast_evaluation_seconds": 2.6061588000156917,
-      "end_to_end_seconds_excluding_forecast_eval": 0.309580700006336,
+      "forecast_evaluation_seconds": 2.421811299980618,
+      "end_to_end_seconds_excluding_forecast_eval": 0.251477999961935,
       "changes": [],
       "optimizer_status": "OPTIMAL",
       "optimizer_stage_statuses": {
@@ -1247,8 +1753,8 @@
       "seed": 2024,
       "case": "surge",
       "planning_mode": "single",
-      "forecast_evaluation_seconds": 2.6061588000156917,
-      "end_to_end_seconds_excluding_forecast_eval": 0.3240201000007801,
+      "forecast_evaluation_seconds": 2.421811299980618,
+      "end_to_end_seconds_excluding_forecast_eval": 0.1894114000024274,
       "changes": [
         "History: last 7 days x1.9 in Z05, Z06, Z09",
         "Forecast stress test Z05: x1.25",
@@ -1265,8 +1771,8 @@
       "seed": 2024,
       "case": "shortage",
       "planning_mode": "single",
-      "forecast_evaluation_seconds": 2.6061588000156917,
-      "end_to_end_seconds_excluding_forecast_eval": 0.29677499999525025,
+      "forecast_evaluation_seconds": 2.421811299980618,
+      "end_to_end_seconds_excluding_forecast_eval": 0.18662200000835583,
       "changes": [
         "Resources: x0.6 -> 19 of 32 teams available"
       ],
@@ -1280,8 +1786,8 @@
       "seed": 2024,
       "case": "disruption",
       "planning_mode": "single",
-      "forecast_evaluation_seconds": 2.6061588000156917,
-      "end_to_end_seconds_excluding_forecast_eval": 0.28890469996258616,
+      "forecast_evaluation_seconds": 2.421811299980618,
+      "end_to_end_seconds_excluding_forecast_eval": 0.17127499997150153,
       "changes": [
         "Cross-river travel: x3",
         "Inaccessible zones: Z02"
@@ -1296,8 +1802,8 @@
       "seed": 2024,
       "case": "shortage_floor30",
       "planning_mode": "single",
-      "forecast_evaluation_seconds": 2.6061588000156917,
-      "end_to_end_seconds_excluding_forecast_eval": 0.3111409999546595,
+      "forecast_evaluation_seconds": 2.421811299980618,
+      "end_to_end_seconds_excluding_forecast_eval": 0.19262779998825863,
       "changes": [
         "Resources: x0.6 -> 19 of 32 teams available",
         "Coverage floor: every zone >= 30% of servable demand"
@@ -1312,8 +1818,8 @@
       "seed": 2024,
       "case": "normal_daily",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 2.6061588000156917,
-      "end_to_end_seconds_excluding_forecast_eval": 0.8375467999721877,
+      "forecast_evaluation_seconds": 2.421811299980618,
+      "end_to_end_seconds_excluding_forecast_eval": 0.5227013999829069,
       "changes": [],
       "optimizer_status": "OPTIMAL",
       "optimizer_stage_statuses": {
@@ -1325,8 +1831,8 @@
       "seed": 2024,
       "case": "surge_daily",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 2.6061588000156917,
-      "end_to_end_seconds_excluding_forecast_eval": 0.8296238000039011,
+      "forecast_evaluation_seconds": 2.421811299980618,
+      "end_to_end_seconds_excluding_forecast_eval": 0.6268025999888778,
       "changes": [
         "History: last 7 days x1.9 in Z05, Z06, Z09",
         "Forecast stress test Z05: x1.25",
@@ -1343,8 +1849,8 @@
       "seed": 2024,
       "case": "shortage_daily",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 2.6061588000156917,
-      "end_to_end_seconds_excluding_forecast_eval": 0.9407474999898113,
+      "forecast_evaluation_seconds": 2.421811299980618,
+      "end_to_end_seconds_excluding_forecast_eval": 0.5887136000092141,
       "changes": [
         "Resources: x0.6 -> 19 of 32 teams available"
       ],
@@ -1358,8 +1864,8 @@
       "seed": 2024,
       "case": "disruption_daily",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 2.6061588000156917,
-      "end_to_end_seconds_excluding_forecast_eval": 0.6371052999747917,
+      "forecast_evaluation_seconds": 2.421811299980618,
+      "end_to_end_seconds_excluding_forecast_eval": 0.42108640004880726,
       "changes": [
         "Cross-river travel: x3",
         "Inaccessible zones: Z02"
@@ -1374,8 +1880,8 @@
       "seed": 2024,
       "case": "shortage_floor30_daily",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 2.6061588000156917,
-      "end_to_end_seconds_excluding_forecast_eval": 0.9501621999661438,
+      "forecast_evaluation_seconds": 2.421811299980618,
+      "end_to_end_seconds_excluding_forecast_eval": 0.5513716999557801,
       "changes": [
         "Resources: x0.6 -> 19 of 32 teams available",
         "Coverage floor: every zone >= 30% of servable demand"
@@ -1390,8 +1896,8 @@
       "seed": 2024,
       "case": "normal_daily_seasonal",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 2.6061588000156917,
-      "end_to_end_seconds_excluding_forecast_eval": 0.728410999989137,
+      "forecast_evaluation_seconds": 2.421811299980618,
+      "end_to_end_seconds_excluding_forecast_eval": 0.4893875999841839,
       "changes": [],
       "optimizer_status": "OPTIMAL",
       "optimizer_stage_statuses": {
@@ -1403,8 +1909,8 @@
       "seed": 2024,
       "case": "surge_daily_seasonal",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 2.6061588000156917,
-      "end_to_end_seconds_excluding_forecast_eval": 0.7379186000325717,
+      "forecast_evaluation_seconds": 2.421811299980618,
+      "end_to_end_seconds_excluding_forecast_eval": 0.5034232999896631,
       "changes": [
         "History: last 7 days x1.9 in Z05, Z06, Z09",
         "Forecast stress test Z05: x1.25",
@@ -1421,8 +1927,8 @@
       "seed": 2024,
       "case": "shortage_daily_seasonal",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 2.6061588000156917,
-      "end_to_end_seconds_excluding_forecast_eval": 1.1529409000067972,
+      "forecast_evaluation_seconds": 2.421811299980618,
+      "end_to_end_seconds_excluding_forecast_eval": 0.754907299997285,
       "changes": [
         "Resources: x0.6 -> 19 of 32 teams available"
       ],
@@ -1436,8 +1942,70 @@
       "seed": 2024,
       "case": "disruption_daily_seasonal",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 2.6061588000156917,
-      "end_to_end_seconds_excluding_forecast_eval": 0.6896769999875687,
+      "forecast_evaluation_seconds": 2.421811299980618,
+      "end_to_end_seconds_excluding_forecast_eval": 0.41006219998234883,
+      "changes": [
+        "Cross-river travel: x3",
+        "Inaccessible zones: Z02"
+      ],
+      "optimizer_status": "OPTIMAL",
+      "optimizer_stage_statuses": {
+        "1_weighted_unmet": "OPTIMAL",
+        "2_travel_minutes": "OPTIMAL"
+      }
+    },
+    {
+      "seed": 2024,
+      "case": "normal_response20",
+      "planning_mode": "single",
+      "forecast_evaluation_seconds": 2.421811299980618,
+      "end_to_end_seconds_excluding_forecast_eval": 0.1944692000397481,
+      "changes": [],
+      "optimizer_status": "OPTIMAL",
+      "optimizer_stage_statuses": {
+        "1_weighted_unmet": "OPTIMAL",
+        "2_travel_minutes": "OPTIMAL"
+      }
+    },
+    {
+      "seed": 2024,
+      "case": "surge_response20",
+      "planning_mode": "single",
+      "forecast_evaluation_seconds": 2.421811299980618,
+      "end_to_end_seconds_excluding_forecast_eval": 0.19238469999982044,
+      "changes": [
+        "History: last 7 days x1.9 in Z05, Z06, Z09",
+        "Forecast stress test Z05: x1.25",
+        "Forecast stress test Z06: x1.25",
+        "Forecast stress test Z09: x1.25"
+      ],
+      "optimizer_status": "OPTIMAL",
+      "optimizer_stage_statuses": {
+        "1_weighted_unmet": "OPTIMAL",
+        "2_travel_minutes": "OPTIMAL"
+      }
+    },
+    {
+      "seed": 2024,
+      "case": "shortage_response20",
+      "planning_mode": "single",
+      "forecast_evaluation_seconds": 2.421811299980618,
+      "end_to_end_seconds_excluding_forecast_eval": 0.22479230002500117,
+      "changes": [
+        "Resources: x0.6 -> 19 of 32 teams available"
+      ],
+      "optimizer_status": "OPTIMAL",
+      "optimizer_stage_statuses": {
+        "1_weighted_unmet": "OPTIMAL",
+        "2_travel_minutes": "OPTIMAL"
+      }
+    },
+    {
+      "seed": 2024,
+      "case": "disruption_response20",
+      "planning_mode": "single",
+      "forecast_evaluation_seconds": 2.421811299980618,
+      "end_to_end_seconds_excluding_forecast_eval": 0.23126819997560233,
       "changes": [
         "Cross-river travel: x3",
         "Inaccessible zones: Z02"
@@ -1452,8 +2020,8 @@
       "seed": 99,
       "case": "normal",
       "planning_mode": "single",
-      "forecast_evaluation_seconds": 2.8952103999909014,
-      "end_to_end_seconds_excluding_forecast_eval": 1.405232099990826,
+      "forecast_evaluation_seconds": 1.8407705999561585,
+      "end_to_end_seconds_excluding_forecast_eval": 0.9302384000038728,
       "changes": [],
       "optimizer_status": "OPTIMAL",
       "optimizer_stage_statuses": {
@@ -1465,8 +2033,8 @@
       "seed": 99,
       "case": "surge",
       "planning_mode": "single",
-      "forecast_evaluation_seconds": 2.8952103999909014,
-      "end_to_end_seconds_excluding_forecast_eval": 1.4485893999808468,
+      "forecast_evaluation_seconds": 1.8407705999561585,
+      "end_to_end_seconds_excluding_forecast_eval": 0.949060200015083,
       "changes": [
         "History: last 7 days x1.9 in Z05, Z06, Z09",
         "Forecast stress test Z05: x1.25",
@@ -1483,8 +2051,8 @@
       "seed": 99,
       "case": "shortage",
       "planning_mode": "single",
-      "forecast_evaluation_seconds": 2.8952103999909014,
-      "end_to_end_seconds_excluding_forecast_eval": 1.5443684000056237,
+      "forecast_evaluation_seconds": 1.8407705999561585,
+      "end_to_end_seconds_excluding_forecast_eval": 1.928266899951268,
       "changes": [
         "Resources: x0.6 -> 19 of 32 teams available"
       ],
@@ -1498,8 +2066,8 @@
       "seed": 99,
       "case": "disruption",
       "planning_mode": "single",
-      "forecast_evaluation_seconds": 2.8952103999909014,
-      "end_to_end_seconds_excluding_forecast_eval": 1.553647099994123,
+      "forecast_evaluation_seconds": 1.8407705999561585,
+      "end_to_end_seconds_excluding_forecast_eval": 0.9417433000053279,
       "changes": [
         "Cross-river travel: x3",
         "Inaccessible zones: Z02"
@@ -1514,8 +2082,8 @@
       "seed": 99,
       "case": "shortage_floor30",
       "planning_mode": "single",
-      "forecast_evaluation_seconds": 2.8952103999909014,
-      "end_to_end_seconds_excluding_forecast_eval": 1.0232337999623269,
+      "forecast_evaluation_seconds": 1.8407705999561585,
+      "end_to_end_seconds_excluding_forecast_eval": 0.9993676000158302,
       "changes": [
         "Resources: x0.6 -> 19 of 32 teams available",
         "Coverage floor: every zone >= 30% of servable demand"
@@ -1530,8 +2098,8 @@
       "seed": 99,
       "case": "normal_daily",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 2.8952103999909014,
-      "end_to_end_seconds_excluding_forecast_eval": 1.8420699999551289,
+      "forecast_evaluation_seconds": 1.8407705999561585,
+      "end_to_end_seconds_excluding_forecast_eval": 1.2890470999991521,
       "changes": [],
       "optimizer_status": "OPTIMAL",
       "optimizer_stage_statuses": {
@@ -1543,8 +2111,8 @@
       "seed": 99,
       "case": "surge_daily",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 2.8952103999909014,
-      "end_to_end_seconds_excluding_forecast_eval": 1.9134552999748848,
+      "forecast_evaluation_seconds": 1.8407705999561585,
+      "end_to_end_seconds_excluding_forecast_eval": 1.4546883999719284,
       "changes": [
         "History: last 7 days x1.9 in Z05, Z06, Z09",
         "Forecast stress test Z05: x1.25",
@@ -1561,8 +2129,8 @@
       "seed": 99,
       "case": "shortage_daily",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 2.8952103999909014,
-      "end_to_end_seconds_excluding_forecast_eval": 6.009162100031972,
+      "forecast_evaluation_seconds": 1.8407705999561585,
+      "end_to_end_seconds_excluding_forecast_eval": 2.961967299983371,
       "changes": [
         "Resources: x0.6 -> 19 of 32 teams available"
       ],
@@ -1576,8 +2144,8 @@
       "seed": 99,
       "case": "disruption_daily",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 2.8952103999909014,
-      "end_to_end_seconds_excluding_forecast_eval": 1.750868300034199,
+      "forecast_evaluation_seconds": 1.8407705999561585,
+      "end_to_end_seconds_excluding_forecast_eval": 1.3033719999948516,
       "changes": [
         "Cross-river travel: x3",
         "Inaccessible zones: Z02"
@@ -1592,8 +2160,8 @@
       "seed": 99,
       "case": "shortage_floor30_daily",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 2.8952103999909014,
-      "end_to_end_seconds_excluding_forecast_eval": 6.560335399990436,
+      "forecast_evaluation_seconds": 1.8407705999561585,
+      "end_to_end_seconds_excluding_forecast_eval": 4.8896562999580055,
       "changes": [
         "Resources: x0.6 -> 19 of 32 teams available",
         "Coverage floor: every zone >= 30% of servable demand"
@@ -1608,8 +2176,8 @@
       "seed": 99,
       "case": "normal_daily_seasonal",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 2.8952103999909014,
-      "end_to_end_seconds_excluding_forecast_eval": 0.7783691000076942,
+      "forecast_evaluation_seconds": 1.8407705999561585,
+      "end_to_end_seconds_excluding_forecast_eval": 0.553702000004705,
       "changes": [],
       "optimizer_status": "OPTIMAL",
       "optimizer_stage_statuses": {
@@ -1621,8 +2189,8 @@
       "seed": 99,
       "case": "surge_daily_seasonal",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 2.8952103999909014,
-      "end_to_end_seconds_excluding_forecast_eval": 1.0753896999522112,
+      "forecast_evaluation_seconds": 1.8407705999561585,
+      "end_to_end_seconds_excluding_forecast_eval": 0.9254698000149801,
       "changes": [
         "History: last 7 days x1.9 in Z05, Z06, Z09",
         "Forecast stress test Z05: x1.25",
@@ -1639,8 +2207,8 @@
       "seed": 99,
       "case": "shortage_daily_seasonal",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 2.8952103999909014,
-      "end_to_end_seconds_excluding_forecast_eval": 5.456784500041977,
+      "forecast_evaluation_seconds": 1.8407705999561585,
+      "end_to_end_seconds_excluding_forecast_eval": 3.505561099969782,
       "changes": [
         "Resources: x0.6 -> 19 of 32 teams available"
       ],
@@ -1654,8 +2222,70 @@
       "seed": 99,
       "case": "disruption_daily_seasonal",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 2.8952103999909014,
-      "end_to_end_seconds_excluding_forecast_eval": 0.7551687000086531,
+      "forecast_evaluation_seconds": 1.8407705999561585,
+      "end_to_end_seconds_excluding_forecast_eval": 0.5065345000475645,
+      "changes": [
+        "Cross-river travel: x3",
+        "Inaccessible zones: Z02"
+      ],
+      "optimizer_status": "OPTIMAL",
+      "optimizer_stage_statuses": {
+        "1_weighted_unmet": "OPTIMAL",
+        "2_travel_minutes": "OPTIMAL"
+      }
+    },
+    {
+      "seed": 99,
+      "case": "normal_response20",
+      "planning_mode": "single",
+      "forecast_evaluation_seconds": 1.8407705999561585,
+      "end_to_end_seconds_excluding_forecast_eval": 1.4269783000345342,
+      "changes": [],
+      "optimizer_status": "OPTIMAL",
+      "optimizer_stage_statuses": {
+        "1_weighted_unmet": "OPTIMAL",
+        "2_travel_minutes": "OPTIMAL"
+      }
+    },
+    {
+      "seed": 99,
+      "case": "surge_response20",
+      "planning_mode": "single",
+      "forecast_evaluation_seconds": 1.8407705999561585,
+      "end_to_end_seconds_excluding_forecast_eval": 1.1100397999980487,
+      "changes": [
+        "History: last 7 days x1.9 in Z05, Z06, Z09",
+        "Forecast stress test Z05: x1.25",
+        "Forecast stress test Z06: x1.25",
+        "Forecast stress test Z09: x1.25"
+      ],
+      "optimizer_status": "OPTIMAL",
+      "optimizer_stage_statuses": {
+        "1_weighted_unmet": "OPTIMAL",
+        "2_travel_minutes": "OPTIMAL"
+      }
+    },
+    {
+      "seed": 99,
+      "case": "shortage_response20",
+      "planning_mode": "single",
+      "forecast_evaluation_seconds": 1.8407705999561585,
+      "end_to_end_seconds_excluding_forecast_eval": 1.368283000017982,
+      "changes": [
+        "Resources: x0.6 -> 19 of 32 teams available"
+      ],
+      "optimizer_status": "OPTIMAL",
+      "optimizer_stage_statuses": {
+        "1_weighted_unmet": "OPTIMAL",
+        "2_travel_minutes": "OPTIMAL"
+      }
+    },
+    {
+      "seed": 99,
+      "case": "disruption_response20",
+      "planning_mode": "single",
+      "forecast_evaluation_seconds": 1.8407705999561585,
+      "end_to_end_seconds_excluding_forecast_eval": 1.2383496999973431,
       "changes": [
         "Cross-river travel: x3",
         "Inaccessible zones: Z02"
@@ -1670,8 +2300,8 @@
       "seed": 314,
       "case": "normal",
       "planning_mode": "single",
-      "forecast_evaluation_seconds": 2.5269437999813817,
-      "end_to_end_seconds_excluding_forecast_eval": 0.30171580001479015,
+      "forecast_evaluation_seconds": 2.0370341000379995,
+      "end_to_end_seconds_excluding_forecast_eval": 0.19767369999317452,
       "changes": [],
       "optimizer_status": "OPTIMAL",
       "optimizer_stage_statuses": {
@@ -1683,8 +2313,8 @@
       "seed": 314,
       "case": "surge",
       "planning_mode": "single",
-      "forecast_evaluation_seconds": 2.5269437999813817,
-      "end_to_end_seconds_excluding_forecast_eval": 0.4435988999903202,
+      "forecast_evaluation_seconds": 2.0370341000379995,
+      "end_to_end_seconds_excluding_forecast_eval": 0.20548429997870699,
       "changes": [
         "History: last 7 days x1.9 in Z05, Z06, Z09",
         "Forecast stress test Z05: x1.25",
@@ -1701,8 +2331,8 @@
       "seed": 314,
       "case": "shortage",
       "planning_mode": "single",
-      "forecast_evaluation_seconds": 2.5269437999813817,
-      "end_to_end_seconds_excluding_forecast_eval": 0.30990639998344705,
+      "forecast_evaluation_seconds": 2.0370341000379995,
+      "end_to_end_seconds_excluding_forecast_eval": 0.21772290003718808,
       "changes": [
         "Resources: x0.6 -> 19 of 32 teams available"
       ],
@@ -1716,8 +2346,8 @@
       "seed": 314,
       "case": "disruption",
       "planning_mode": "single",
-      "forecast_evaluation_seconds": 2.5269437999813817,
-      "end_to_end_seconds_excluding_forecast_eval": 0.3093782000360079,
+      "forecast_evaluation_seconds": 2.0370341000379995,
+      "end_to_end_seconds_excluding_forecast_eval": 0.20754800003487617,
       "changes": [
         "Cross-river travel: x3",
         "Inaccessible zones: Z02"
@@ -1732,8 +2362,8 @@
       "seed": 314,
       "case": "shortage_floor30",
       "planning_mode": "single",
-      "forecast_evaluation_seconds": 2.5269437999813817,
-      "end_to_end_seconds_excluding_forecast_eval": 0.3440726000117138,
+      "forecast_evaluation_seconds": 2.0370341000379995,
+      "end_to_end_seconds_excluding_forecast_eval": 0.2112053000018932,
       "changes": [
         "Resources: x0.6 -> 19 of 32 teams available",
         "Coverage floor: every zone >= 30% of servable demand"
@@ -1748,8 +2378,8 @@
       "seed": 314,
       "case": "normal_daily",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 2.5269437999813817,
-      "end_to_end_seconds_excluding_forecast_eval": 0.9252128999796696,
+      "forecast_evaluation_seconds": 2.0370341000379995,
+      "end_to_end_seconds_excluding_forecast_eval": 0.5824769999599084,
       "changes": [],
       "optimizer_status": "OPTIMAL",
       "optimizer_stage_statuses": {
@@ -1761,8 +2391,8 @@
       "seed": 314,
       "case": "surge_daily",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 2.5269437999813817,
-      "end_to_end_seconds_excluding_forecast_eval": 0.8278853000374511,
+      "forecast_evaluation_seconds": 2.0370341000379995,
+      "end_to_end_seconds_excluding_forecast_eval": 0.6405923999845982,
       "changes": [
         "History: last 7 days x1.9 in Z05, Z06, Z09",
         "Forecast stress test Z05: x1.25",
@@ -1779,8 +2409,8 @@
       "seed": 314,
       "case": "shortage_daily",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 2.5269437999813817,
-      "end_to_end_seconds_excluding_forecast_eval": 1.0189970000064932,
+      "forecast_evaluation_seconds": 2.0370341000379995,
+      "end_to_end_seconds_excluding_forecast_eval": 0.7482621000381187,
       "changes": [
         "Resources: x0.6 -> 19 of 32 teams available"
       ],
@@ -1794,8 +2424,8 @@
       "seed": 314,
       "case": "disruption_daily",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 2.5269437999813817,
-      "end_to_end_seconds_excluding_forecast_eval": 0.6152020000154153,
+      "forecast_evaluation_seconds": 2.0370341000379995,
+      "end_to_end_seconds_excluding_forecast_eval": 0.47442629997385666,
       "changes": [
         "Cross-river travel: x3",
         "Inaccessible zones: Z02"
@@ -1810,8 +2440,8 @@
       "seed": 314,
       "case": "shortage_floor30_daily",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 2.5269437999813817,
-      "end_to_end_seconds_excluding_forecast_eval": 1.047699399990961,
+      "forecast_evaluation_seconds": 2.0370341000379995,
+      "end_to_end_seconds_excluding_forecast_eval": 0.832830399973318,
       "changes": [
         "Resources: x0.6 -> 19 of 32 teams available",
         "Coverage floor: every zone >= 30% of servable demand"
@@ -1826,8 +2456,8 @@
       "seed": 314,
       "case": "normal_daily_seasonal",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 2.5269437999813817,
-      "end_to_end_seconds_excluding_forecast_eval": 0.8686614999896847,
+      "forecast_evaluation_seconds": 2.0370341000379995,
+      "end_to_end_seconds_excluding_forecast_eval": 0.5805303999804892,
       "changes": [],
       "optimizer_status": "OPTIMAL",
       "optimizer_stage_statuses": {
@@ -1839,8 +2469,8 @@
       "seed": 314,
       "case": "surge_daily_seasonal",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 2.5269437999813817,
-      "end_to_end_seconds_excluding_forecast_eval": 0.9763464999850839,
+      "forecast_evaluation_seconds": 2.0370341000379995,
+      "end_to_end_seconds_excluding_forecast_eval": 0.6566618999931961,
       "changes": [
         "History: last 7 days x1.9 in Z05, Z06, Z09",
         "Forecast stress test Z05: x1.25",
@@ -1857,8 +2487,8 @@
       "seed": 314,
       "case": "shortage_daily_seasonal",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 2.5269437999813817,
-      "end_to_end_seconds_excluding_forecast_eval": 5.841009799973108,
+      "forecast_evaluation_seconds": 2.0370341000379995,
+      "end_to_end_seconds_excluding_forecast_eval": 6.28652249998413,
       "changes": [
         "Resources: x0.6 -> 19 of 32 teams available"
       ],
@@ -1872,8 +2502,70 @@
       "seed": 314,
       "case": "disruption_daily_seasonal",
       "planning_mode": "daily",
-      "forecast_evaluation_seconds": 2.5269437999813817,
-      "end_to_end_seconds_excluding_forecast_eval": 0.6083636999828741,
+      "forecast_evaluation_seconds": 2.0370341000379995,
+      "end_to_end_seconds_excluding_forecast_eval": 0.4597566000302322,
+      "changes": [
+        "Cross-river travel: x3",
+        "Inaccessible zones: Z02"
+      ],
+      "optimizer_status": "OPTIMAL",
+      "optimizer_stage_statuses": {
+        "1_weighted_unmet": "OPTIMAL",
+        "2_travel_minutes": "OPTIMAL"
+      }
+    },
+    {
+      "seed": 314,
+      "case": "normal_response20",
+      "planning_mode": "single",
+      "forecast_evaluation_seconds": 2.0370341000379995,
+      "end_to_end_seconds_excluding_forecast_eval": 0.25968039996223524,
+      "changes": [],
+      "optimizer_status": "OPTIMAL",
+      "optimizer_stage_statuses": {
+        "1_weighted_unmet": "OPTIMAL",
+        "2_travel_minutes": "OPTIMAL"
+      }
+    },
+    {
+      "seed": 314,
+      "case": "surge_response20",
+      "planning_mode": "single",
+      "forecast_evaluation_seconds": 2.0370341000379995,
+      "end_to_end_seconds_excluding_forecast_eval": 0.29185809998307377,
+      "changes": [
+        "History: last 7 days x1.9 in Z05, Z06, Z09",
+        "Forecast stress test Z05: x1.25",
+        "Forecast stress test Z06: x1.25",
+        "Forecast stress test Z09: x1.25"
+      ],
+      "optimizer_status": "OPTIMAL",
+      "optimizer_stage_statuses": {
+        "1_weighted_unmet": "OPTIMAL",
+        "2_travel_minutes": "OPTIMAL"
+      }
+    },
+    {
+      "seed": 314,
+      "case": "shortage_response20",
+      "planning_mode": "single",
+      "forecast_evaluation_seconds": 2.0370341000379995,
+      "end_to_end_seconds_excluding_forecast_eval": 0.5990653000189923,
+      "changes": [
+        "Resources: x0.6 -> 19 of 32 teams available"
+      ],
+      "optimizer_status": "OPTIMAL",
+      "optimizer_stage_statuses": {
+        "1_weighted_unmet": "OPTIMAL",
+        "2_travel_minutes": "OPTIMAL"
+      }
+    },
+    {
+      "seed": 314,
+      "case": "disruption_response20",
+      "planning_mode": "single",
+      "forecast_evaluation_seconds": 2.0370341000379995,
+      "end_to_end_seconds_excluding_forecast_eval": 0.34940710000228137,
       "changes": [
         "Cross-river travel: x3",
         "Inaccessible zones: Z02"
@@ -1885,5 +2577,5 @@
       }
     }
   ],
-  "total_runtime_seconds": 122.63165229995502
+  "total_runtime_seconds": 127.51242939999793
 }

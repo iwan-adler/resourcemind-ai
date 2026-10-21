@@ -796,6 +796,7 @@ def what_if_tab(r: PipelineResult, key_args: tuple) -> None:
             column_config={
                 "from_name": "From",
                 "to_name": "To",
+                "teams": "Teams",
                 "weighted_unmet_if_forbidden": st.column_config.NumberColumn("Weighted unmet +", format="%.1f"),
                 "requests_lost_if_forbidden": st.column_config.NumberColumn("Requests lost", format="%.0f"),
                 "travel_change_if_forbidden": st.column_config.NumberColumn("Travel change (min)", format="%+.0f"),
@@ -822,7 +823,20 @@ def what_if_tab(r: PipelineResult, key_args: tuple) -> None:
             cf = get_counterfactual(*key_args, j, i, k)
         (st.info if cf.feasible else st.warning)(f"**{cf.question}** {cf.answer}")
         if cf.feasible and not cf.zone_changes.empty:
-            st.dataframe(cf.zone_changes, hide_index=True, width="stretch")
+            st.dataframe(
+                cf.zone_changes,
+                hide_index=True,
+                width="stretch",
+                column_config={
+                    "zone_id": "Zone",
+                    "zone_name": "Name",
+                    "teams_recommended": "Teams (plan)",
+                    "teams_counterfactual": "Teams (with move)",
+                    "served_recommended": "Served (plan)",
+                    "served_counterfactual": "Served (with move)",
+                    "served_change": st.column_config.NumberColumn("Change", format="%+d"),
+                },
+            )
 
 
 def page_planner(r: PipelineResult, key_args: tuple) -> None:
