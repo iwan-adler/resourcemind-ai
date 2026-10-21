@@ -58,6 +58,9 @@ class AppConfig:
     # "single": one repositioning decision for the whole horizon (default).
     # "daily": day-by-day plan; travel time eats into the moving team's shift.
     planning_mode: str = "single"
+    # Response-time standard in minutes (None = off: any response counts, teams serve their own zone).
+    # When set, demand counts as covered only if a team can reach it within this time.
+    response_standard_minutes: float | None = None
     forecast: ForecastConfig = field(default_factory=ForecastConfig)
     optimizer: OptimizerConfig = field(default_factory=OptimizerConfig)
 
@@ -82,6 +85,10 @@ class AppConfig:
             raise ValueError("planning_basis must be 'point' or 'upper'")
         if self.planning_mode not in {"single", "daily"}:
             raise ValueError("planning_mode must be 'single' or 'daily'")
+        if self.response_standard_minutes is not None and not 1 <= self.response_standard_minutes <= 120:
+            raise ValueError("response_standard_minutes must be between 1 and 120, or None")
+        if self.response_standard_minutes is not None and self.planning_mode == "daily":
+            raise ValueError("the response-time standard is only available in single-period planning")
         if self.optimizer.mode not in {"lexicographic", "weighted"}:
             raise ValueError("optimizer.mode must be 'lexicographic' or 'weighted'")
 

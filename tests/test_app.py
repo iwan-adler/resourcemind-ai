@@ -146,3 +146,15 @@ def test_robustness_check_runs_from_strategy_page(app):
     assert not app.exception
     assert app.session_state["robustness"][1] is False
     assert any("held-out test forecast windows" in c.value for c in app.caption)
+
+
+def test_response_standard_setting_changes_the_plan(app):
+    app.sidebar.radio(key="planning_mode").set_value("single").run()
+    app.sidebar.radio(key="page").set_value("Allocation planner").run()
+    app.sidebar.checkbox(key="use_standard").check().run()
+    app.sidebar.slider(key="standard").set_value(20).run()
+    assert not app.exception
+    assert any("Response-time standard: 20 min" in i.value for i in app.info)
+    assert "Coverage within 20 min" in "\n".join(m.value for m in app.markdown)
+    app.sidebar.checkbox(key="use_standard").uncheck().run()
+    assert not any("Response-time standard" in i.value for i in app.info)

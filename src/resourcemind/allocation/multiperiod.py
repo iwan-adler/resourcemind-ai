@@ -328,6 +328,22 @@ def diagnose_daily_infeasibility(problem: MultiPeriodProblem) -> list[str]:
     return reasons
 
 
+def _scaled_weighted_unmet(problem: MultiPeriodProblem, plan: DailyPlan) -> int:
+    """The stage-1 objective of ``plan`` in the solver's integer units."""
+    unmet = compute_daily_outcome(problem, plan).unmet
+    w_int = np.array([int(round(float(w) * WEIGHT_SCALE)) for w in problem.weights])
+    return int((w_int[:, None] * unmet).sum())
+
+
+def _valid_hint(problem: MultiPeriodProblem, hint: DailyPlan | None) -> DailyPlan | None:
+    """The hint if it satisfies every hard constraint (checked by the independent validator)."""
+    if hint is None:
+        return None
+    from resourcemind.allocation.validation import validate_daily_plan  # local: validation imports this module
+
+    return hint if not validate_daily_plan(problem, hint) else None
+
+
 def optimize_daily(
     problem: MultiPeriodProblem,
     mode: str = "lexicographic",
@@ -371,12 +387,28 @@ def optimize_daily(
         solver = _solver(time_limit_seconds, num_workers, seed)
         code1 = solver.solve(model)
         stages["1_weighted_unmet"] = _STATUS[code1]
-        plan = None
+        plan, best = None, None
         status = _STATUS[code1]
         if code1 in (cp_model.OPTIMAL, cp_model.FEASIBLE):
             plan = _extract(problem, solver, X, y)
             best = int(round(solver.objective_value))
             bound = float(solver.best_objective_bound) / WEIGHT_SCALE
+        elif code1 == cp_model.UNKNOWN:
+            bound = float(solver.best_objective_bound) / WEIGHT_SCALE
+        # CP-SAT does not always follow a hint within the time limit. If the warm-start
+        # plan is valid and better than what the solver found, keep it, so the result
+        # is never worse than the plan it started from.
+        warm = _valid_hint(problem, hint) if code1 != cp_model.OPTIMAL else None
+        if warm is not None:
+            warm_best = _scaled_weighted_unmet(problem, warm)
+            if best is None or warm_best < best:
+                plan, best, status = warm, warm_best, "FEASIBLE"
+                stages["1_source"] = "warm start kept"
+                messages.append(
+                    "Within the time limit the solver did not improve on the warm-start (greedy) plan; that plan "
+                    "was kept and only travel was optimised further."
+                )
+        if plan is not None:
             model.add(weighted_unmet <= best)
             model.clear_objective()
             model.minimize(travel)

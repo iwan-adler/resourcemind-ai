@@ -41,6 +41,10 @@ def greedy_allocation(problem: AllocationProblem) -> AllocationResult:
     retention minimum are considered. Stops when no move improves the score.
     Ties break on lower travel time, then lower zone indices (deterministic).
     A repair phase first tries to move teams out of zones above staging capacity.
+
+    The rule always reasons in-zone (a team serves its own zone). Under a response-time
+    standard it is therefore a simpler heuristic than the model it is scored with: its
+    plan is still scored by the same response-aware outcome function as the optimizer.
     """
     start = time.perf_counter()
     n = problem.n

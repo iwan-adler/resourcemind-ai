@@ -20,8 +20,17 @@ import numpy as np
 import pandas as pd
 
 from resourcemind.allocation.models import AllocationProblem
+from resourcemind.allocation.response import response_pairs
 from resourcemind.config import AppConfig
-from resourcemind.data.generate import Dataset, _largest_remainder
+from resourcemind.data.generate import (
+    AVG_SPEED_KMH,
+    DISPATCH_OVERHEAD_MIN,
+    MAP_HEIGHT_KM,
+    MAP_WIDTH_KM,
+    ROAD_FACTOR,
+    Dataset,
+    _largest_remainder,
+)
 from resourcemind.data.validate import ValidationReport, validate_history, validate_travel
 
 
@@ -340,9 +349,28 @@ def planning_demand(inputs: ScenarioInputs, forecast_totals: pd.DataFrame, basis
     return out
 
 
-def build_problem(inputs: ScenarioInputs, demand_units) -> AllocationProblem:
+def local_response_minutes(n_zones: int) -> float:
+    """Typical response time to an incident inside a zone (synthetic, from map geometry).
+
+    Zones share the map evenly, so each covers a square of side sqrt(area / n). The mean
+    distance from a random point in a square to its centre is about 0.38 x side; the
+    time uses the same dispatch overhead, road factor and speed as the travel matrix.
+    """
+    side_km = math.sqrt(MAP_WIDTH_KM * MAP_HEIGHT_KM / max(n_zones, 1))
+    return DISPATCH_OVERHEAD_MIN + 0.38 * side_km * ROAD_FACTOR / AVG_SPEED_KMH * 60.0
+
+
+def build_problem(inputs: ScenarioInputs, demand_units, response_standard: float | None = None) -> AllocationProblem:
+    """Allocation problem for the scenario; ``response_standard`` (minutes) enables response-time coverage."""
     z = inputs.zones
     h = inputs.horizon_days
+    pairs = None
+    if response_standard is not None:
+        travel = inputs.travel.to_numpy(dtype=float)
+        eligible = inputs.eligible.to_numpy(dtype=bool)
+        local = np.full(len(z), local_response_minutes(len(z)))
+        # Blocked routes and inaccessible zones cannot be used to respond either.
+        pairs = response_pairs(travel, local, response_standard, blocked=~eligible & (travel <= response_standard))
     return AllocationProblem(
         zone_ids=tuple(z["zone_id"]),
         zone_names=tuple(z["zone_name"]),
@@ -359,6 +387,8 @@ def build_problem(inputs: ScenarioInputs, demand_units) -> AllocationProblem:
         horizon_days=h,
         max_travel_minutes=inputs.max_travel_minutes,
         coverage_floor=inputs.coverage_floor,
+        response_pairs=pairs,
+        response_standard_minutes=response_standard,
     )
 
 

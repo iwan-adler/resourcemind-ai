@@ -68,6 +68,19 @@ def _build(problem: AllocationProblem):
     n = problem.n
     m = cp_model.CpModel()
     x, incoming_all = _team_constraints(m, problem)
+    R = int(problem.service_per_team)
+    flows: dict[tuple[int, int], cp_model.IntVar] = {}
+    if problem.uses_response_standard:
+        # Service within the response standard: teams based in k serve reachable zones i,
+        # sharing their capacity R * X_k (see allocation/response.py).
+        for k in range(n):
+            for i in range(n):
+                if problem.response_pairs[k, i] and problem.servable[i] > 0:
+                    flows[k, i] = m.new_int_var(0, int(problem.servable[i]), f"f_{k}_{i}")
+        for k in range(n):
+            out = [v for (kk, _), v in flows.items() if kk == k]
+            if out:
+                m.add(sum(out) <= R * sum(incoming_all[k]))
     S, U = [], []
     for i in range(n):
         incoming = incoming_all[i]
@@ -76,7 +89,10 @@ def _build(problem: AllocationProblem):
             int(problem.servable[i]),
             f"S_{i}",
         )
-        m.add(s <= int(problem.service_per_team) * sum(incoming))
+        if problem.uses_response_standard:
+            m.add(s <= sum(v for (_, ii), v in flows.items() if ii == i))
+        else:
+            m.add(s <= R * sum(incoming))
         u = m.new_int_var(0, int(problem.demand[i]), f"U_{i}")
         m.add(u == int(problem.demand[i]) - s)
         S.append(s)
@@ -281,6 +297,8 @@ def optimize_expected(
     at that optimum. The equity floor is not applied here. ``problem.demand`` is not
     used; the plan is scored by the caller on independent samples.
     """
+    if problem.uses_response_standard:
+        raise NotImplementedError("optimize_expected supports the in-zone service model only")
     samples = np.maximum(np.asarray(demand_samples, dtype=int), 0)
     if samples.ndim != 2 or samples.shape[1] != problem.n or len(samples) == 0:
         raise ValueError("demand_samples must have shape (n_samples, n_zones)")

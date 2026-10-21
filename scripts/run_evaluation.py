@@ -10,7 +10,8 @@ Writes:
   results/robustness.csv            plans scored on held-out forecast errors (single-period presets)
 
 Cases ending in "_daily" use the day-by-day (multi-period) planning mode on the
-same scenario; the others use the default single-period mode.
+same scenario; "_response20" cases apply a 20-minute response-time standard; the
+others use the default single-period, in-zone mode.
 """
 
 import argparse
@@ -39,10 +40,12 @@ from resourcemind.simulation.scenarios import PRESETS, ScenarioOverrides
 _BASE_CASES = [(k, k, ScenarioOverrides()) for k in PRESETS] + [
     ("shortage_floor30", "shortage", ScenarioOverrides(coverage_floor=0.3))
 ]
+# The "_response20" cases count demand as covered only within a 20-minute response standard.
 CASES = (
-    [(c, p, o, "single", "auto") for c, p, o in _BASE_CASES]
-    + [(f"{c}_daily", p, o, "daily", "auto") for c, p, o in _BASE_CASES]
-    + [(f"{k}_daily_seasonal", k, ScenarioOverrides(), "daily", "seasonal_average_3w") for k in PRESETS]
+    [(c, p, o, "single", "auto", None) for c, p, o in _BASE_CASES]
+    + [(f"{c}_daily", p, o, "daily", "auto", None) for c, p, o in _BASE_CASES]
+    + [(f"{k}_daily_seasonal", k, ScenarioOverrides(), "daily", "seasonal_average_3w", None) for k in PRESETS]
+    + [(f"{k}_response20", k, ScenarioOverrides(), "single", "auto", 20.0) for k in PRESETS]
 )
 SUMMARY_COLUMNS = [
     "total_unmet",
@@ -84,10 +87,10 @@ def main() -> None:
                     "test_interval_coverage": fe.test_interval_coverage[rec["model"]],
                 }
             )
-        for case, preset, overrides, mode, model in CASES:
+        for case, preset, overrides, mode, model, standard in CASES:
             t = time.perf_counter()
             result = run_pipeline(
-                config.with_updates(planning_mode=mode),
+                config.with_updates(planning_mode=mode, response_standard_minutes=standard),
                 PipelineSettings(scenario=preset, model=model, overrides=overrides),
                 dataset=dataset,
                 forecast_eval=fe,
@@ -99,6 +102,7 @@ def main() -> None:
                         "seed": seed,
                         "case": case,
                         "planning_mode": mode,
+                        "response_standard_minutes": standard,
                         "forecast_model": result.forecast.model,
                         "end_to_end_seconds": end_to_end,
                         **rec,

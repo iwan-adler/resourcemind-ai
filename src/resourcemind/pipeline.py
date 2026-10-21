@@ -133,7 +133,8 @@ class PipelineResult:
 def gap_table(inputs: ScenarioInputs, demand: pd.DataFrame, problem: AllocationProblem) -> pd.DataFrame:
     z = inputs.zones.reset_index(drop=True)
     capacity = problem.available * problem.service_per_team
-    served = np.minimum(problem.servable, capacity)
+    # Service of the current allocation under the active coverage rule (in-zone or response standard).
+    served = compute_outcome(problem, np.diag(problem.available.astype(int))).served
     gap = problem.demand - capacity
     status = np.where(gap > 0, "shortage", np.where(gap < -problem.service_per_team, "surplus", "balanced"))
     return pd.DataFrame(
@@ -345,7 +346,7 @@ def run_pipeline(
     timings["forecast"] = time.perf_counter() - t
 
     demand = planning_demand(inputs, forecast.totals, config.planning_basis)
-    problem = build_problem(inputs, demand["planning_demand"].to_numpy())
+    problem = build_problem(inputs, demand["planning_demand"].to_numpy(), config.response_standard_minutes)
     gaps = gap_table(inputs, demand, problem)
 
     t = time.perf_counter()
@@ -416,6 +417,7 @@ def run_record(result: PipelineResult) -> dict:
         },
         "seed": cfg.seed,
         "planning_mode": result.planning_mode,
+        "response_standard_minutes": cfg.response_standard_minutes,
         "forecast": {
             "model": result.forecast.model,
             "selection": "best validation MAE" if result.settings.model == "auto" else "user selected",

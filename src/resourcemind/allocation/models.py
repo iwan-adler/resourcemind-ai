@@ -34,10 +34,19 @@ class AllocationProblem:
     # Optional equity policy: each zone must receive at least this share of its
     # servable demand, ceil(floor * min(D_i, K_i)). 0 disables it.
     coverage_floor: float = 0.0
+    # Optional response-time standard (allocation/response.py). None = in-zone model:
+    # demand is served only by teams stationed in the same zone, and any response counts.
+    # Otherwise response_pairs[k, i] = a team based in k reaches zone i within the standard.
+    response_pairs: np.ndarray | None = None
+    response_standard_minutes: float | None = None
 
     @property
     def n(self) -> int:
         return len(self.zone_ids)
+
+    @property
+    def uses_response_standard(self) -> bool:
+        return self.response_pairs is not None
 
     @property
     def servable(self) -> np.ndarray:
@@ -78,11 +87,22 @@ class Outcome:
 
 
 def compute_outcome(problem: AllocationProblem, x: np.ndarray) -> Outcome:
-    """Service delivered by an allocation: S_i = min(D_i, K_i, R * X_i)."""
+    """Service delivered by an allocation.
+
+    In-zone model: S_i = min(D_i, K_i, R * X_i). With a response-time standard, S is
+    the best service teams can give within the standard from where they are stationed
+    (an exact maximum-weight assignment, see allocation/response.py).
+    """
     x = np.asarray(x)
     stationed = x.sum(axis=0)
-    capacity = problem.service_per_team * stationed
-    served = np.minimum(problem.servable, capacity)
+    if problem.uses_response_standard:
+        from resourcemind.allocation.response import best_service
+
+        served, _ = best_service(
+            stationed, problem.servable, problem.weights, problem.service_per_team, problem.response_pairs
+        )
+    else:
+        served = np.minimum(problem.servable, problem.service_per_team * stationed)
     unmet = problem.demand - served
     off_diag = x * (1 - np.eye(problem.n, dtype=int))
     limiting = []
@@ -91,6 +111,8 @@ def compute_outcome(problem: AllocationProblem, x: np.ndarray) -> Outcome:
             limiting.append("demand fully served")
         elif served[i] >= problem.service_cap[i]:
             limiting.append("service cap K (more teams would not help)")
+        elif problem.uses_response_standard and not (problem.response_pairs[:, i] & (stationed > 0)).any():
+            limiting.append("no team stationed within the response standard")
         elif stationed[i] >= problem.staging_capacity[i]:
             limiting.append("staging capacity M")
         else:

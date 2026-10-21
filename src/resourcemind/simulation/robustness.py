@@ -30,6 +30,7 @@ import pandas as pd
 
 from resourcemind.allocation.models import AllocationProblem
 from resourcemind.allocation.optimizer import optimize_allocation, optimize_expected
+from resourcemind.allocation.response import best_service
 
 ROBUST_LABELS = {
     "current": "Current allocation",
@@ -57,7 +58,16 @@ def evaluate_plan_on_samples(problem: AllocationProblem, x: np.ndarray, realised
     """Service of a FIXED plan under each sampled demand vector (rows of ``realised``)."""
     stationed = np.asarray(x).sum(axis=0)
     capacity = problem.service_per_team * stationed
-    served = np.minimum(np.minimum(realised, problem.service_cap[None, :]), capacity[None, :])
+    servable = np.minimum(realised, problem.service_cap[None, :])
+    if problem.uses_response_standard:
+        served = np.vstack(
+            [
+                best_service(stationed, row, problem.weights, problem.service_per_team, problem.response_pairs)[0]
+                for row in servable
+            ]
+        )
+    else:
+        served = np.minimum(servable, capacity[None, :])
     unmet = realised - served
     totals = realised.sum(axis=1)
     coverage = np.where(totals > 0, served.sum(axis=1) / np.maximum(totals, 1), 1.0)
@@ -115,7 +125,9 @@ def robustness_check(result, n_samples: int = 200, seed: int = 0, include_expect
             notes.append(f"{ROBUST_LABELS[key]}: no plan ({res.status}); left out.")
         else:
             plans[key] = res.x
-    if include_expected:
+    if include_expected and p.uses_response_standard:
+        notes.append("The expected-outcome plan is only available without a response-time standard; left out.")
+    elif include_expected:
         fit = sample_demand(forecast, stress, fit_residuals, FIT_SAMPLES, seed + 1)
         expected = optimize_expected(p, fit, **solve)
         if expected.x is None:

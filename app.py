@@ -45,7 +45,7 @@ from resourcemind.pipeline import (  # noqa: E402
     zone_plan_table,
 )
 from resourcemind.simulation.robustness import COVERAGE_TARGET, robustness_check  # noqa: E402
-from resourcemind.simulation.scenarios import PRESETS, ScenarioOverrides  # noqa: E402
+from resourcemind.simulation.scenarios import PRESETS, ScenarioOverrides, local_response_minutes  # noqa: E402
 from resourcemind.simulation.sensitivity import PARAMETERS, sensitivity_sweep  # noqa: E402
 from resourcemind.ui import components as ui  # noqa: E402
 from resourcemind.visualization import charts  # noqa: E402
@@ -184,6 +184,23 @@ def sidebar() -> tuple[str, AppConfig, str, str]:
                 help="Day by day: teams may move every day and travel time reduces the moving team's "
                 "service that day. Affects the Allocation planner and Strategy evaluation.",
             )
+            use_standard = st.checkbox(
+                "Apply a response-time standard",
+                key="use_standard",
+                disabled=planning_mode == "daily",
+                help="Count demand as covered only if a team can reach it within the standard. Teams in a "
+                f"neighbouring zone can help when close enough. Local response inside a zone is "
+                f"{local_response_minutes(BASE_CONFIG.n_zones):.1f} min on this synthetic map. "
+                "Single-period planning only.",
+            )
+            standard = st.slider(
+                "Response-time standard (minutes)",
+                10,
+                40,
+                20,
+                key="standard",
+                disabled=not use_standard or planning_mode == "daily",
+            )
             model = st.selectbox(
                 "Forecast model",
                 ["auto", *MODEL_REGISTRY],
@@ -232,6 +249,7 @@ def sidebar() -> tuple[str, AppConfig, str, str]:
         planning_basis=basis,
         planning_mode=planning_mode,
         optimizer=optimizer,
+        response_standard_minutes=float(standard) if use_standard and planning_mode == "single" else None,
     )
     return page, cfg, scenario, model
 
@@ -305,6 +323,8 @@ def status_strip(r: PipelineResult) -> None:
     ]
     if r.daily is not None:
         parts.append(ui.pill(f"Day-by-day plan · {r.daily.problem.horizon} days", "info"))
+    if r.problem.uses_response_standard:
+        parts.append(ui.pill(f"Coverage within {r.problem.response_standard_minutes:.0f} min", "info"))
     parts.append(ui.pill("Synthetic data", "warning"))
     st.markdown(" ".join(parts), unsafe_allow_html=True)
 
@@ -820,6 +840,22 @@ def page_planner(r: PipelineResult, key_args: tuple) -> None:
     )
     for m in opt.result.messages:
         st.caption(m)
+    if r.problem.uses_response_standard:
+        p = r.problem
+        cross = [
+            f"{p.zone_ids[k]}→{p.zone_ids[i]}"
+            for k in range(p.n)
+            for i in range(p.n)
+            if k != i and p.response_pairs[k, i]
+        ]
+        own = "counts" if np.diag(p.response_pairs).all() else "does NOT count (local response is slower)"
+        st.info(
+            f"**Response-time standard: {p.response_standard_minutes:.0f} min.** Demand counts as covered only when a "
+            f"team can reach it within the standard. Service inside a team's own zone {own}; teams can also cover "
+            f"{len(cross)} neighbouring-zone route(s): {', '.join(cross) if cross else 'none'}. "
+            "The greedy baseline still reasons in-zone, but every plan is scored with the same response-aware rule.",
+            icon=":material/timer:",
+        )
 
     if opt.outcome is None or opt.violations:
         infeasible_box(r)
