@@ -71,3 +71,14 @@ def test_horizon_setting_changes_forecast(app):
     daily = [d for d in app.dataframe if d.value.shape[1] == 3]
     assert daily, "daily forecast table should have 3 date columns for a 3-day horizon"
     app.sidebar.slider(key="horizon").set_value(7).run()
+
+
+def test_deep_link_opens_requested_page_and_scenario():
+    at = AppTest.from_file(APP, default_timeout=180)
+    at.query_params["page"] = "planner"
+    at.query_params["scenario"] = "surge"
+    at.run()
+    assert not at.exception
+    assert at.session_state["page"] == "Allocation planner"
+    assert at.session_state["scenario"] == "surge"
+    assert any("Allocation planner" in t.value for t in at.title)

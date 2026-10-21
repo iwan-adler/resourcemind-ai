@@ -1,6 +1,10 @@
 # ResourceMind AI
 
+[![tests](https://github.com/iwan-adler/resourcemind-ai/actions/workflows/tests.yml/badge.svg)](https://github.com/iwan-adler/resourcemind-ai/actions/workflows/tests.yml)
+
 **Adaptive emergency resource allocation under changing demand: a decision-support prototype.**
+
+![Command overview: forecast demand, team capacity, coverage and the optimized plan](docs/images/overview.png)
 
 ResourceMind AI forecasts near-term emergency service demand by zone, finds where team capacity falls short,
 and recommends where to reposition response teams. The recommendation comes from a constrained optimization
@@ -36,6 +40,29 @@ leaves some zones under-served while others have spare capacity. The tool:
 | Analysis | Strategy comparison, fairness by zone and tier, sensitivity sweeps |
 | Export | CSV (forecasts, plan, movements, strategies, sensitivity), JSON run record, Markdown summary |
 
+## Screenshots
+
+All screenshots show the real app running on the default synthetic dataset (seed 42).
+
+**Schematic map:** marker size = forecast demand, colour + shape = coverage status, arrows = recommended
+team moves (normal operations).
+
+![Schematic shortage map with recommended team movements](docs/images/map.png)
+
+**Allocation planner, sudden demand surge:** CP-SAT moves 6 teams and cuts weighted unmet demand from
+1,077.2 to 705.1; 63 requests exceed zone service caps and cannot be served by any plan.
+
+![Allocation planner showing current vs recommended teams per zone](docs/images/planner.png)
+
+**Demand forecasts:** history, 7-day forecast with empirical interval, and chronological model evaluation.
+
+![Demand forecast chart and model evaluation](docs/images/forecasts.png)
+
+**Strategy evaluation, severe resource shortage:** greedy and optimized reach the same weighted unmet
+demand here, and both lower the worst-off zone's coverage. That is the fairness trade-off discussed below.
+
+![Strategy comparison table and charts](docs/images/strategies.png)
+
 ## Architecture
 
 ```
@@ -66,9 +93,8 @@ results/         output of the evaluation command
 
 ## Installation
 
-Verified with **Python 3.14.7 (x64)** on Windows. The pinned dependency set also resolves to binary wheels
-for Linux on Python 3.12 and 3.13, but it has not been run there. Any Python ≥ 3.11 for which the pinned
-wheels exist should work.
+Verified with **Python 3.14.7 (x64)** on Windows, and by CI (GitHub Actions) on **Ubuntu with Python 3.12
+and 3.13**: lint, the full test suite and the smoke test.
 
 ```bash
 python -m venv .venv
@@ -87,10 +113,14 @@ streamlit run app.py
 
 Open http://localhost:8501. No API keys, secrets or internet access are needed.
 
+Deep links open a specific section and scenario, which is handy during a demo:
+`?page=overview|forecasts|planner|lab|strategies|methodology` and
+`&scenario=normal|surge|shortage|disruption`, e.g. http://localhost:8501/?page=planner&scenario=surge.
+
 ## Tests, lint, smoke test
 
 ```bash
-pytest                      # 69 tests: data, forecasting, optimizer, baselines, simulation, metrics, integration, UI
+pytest                      # 70 tests: data, forecasting, optimizer, baselines, simulation, metrics, integration, UI
 ruff check . && ruff format --check .
 python scripts/smoke_test.py
 ```
@@ -119,14 +149,14 @@ Measured results (synthetic data, mean of 5 seeds; full tables in [docs/evaluati
 
 ## Deploy (Streamlit Community Cloud, free)
 
-Not deployed yet; this needs your GitHub and Streamlit accounts.
+Not deployed yet. The code is on GitHub at https://github.com/iwan-adler/resourcemind-ai; deploying needs
+a Streamlit sign-in by the repository owner.
 
-1. Create a GitHub repository and push this project (`requirements.txt` and `app.py` at the repo root).
-2. Sign in at https://share.streamlit.io with GitHub and choose **Create app → Deploy a public app from GitHub**.
-3. Select the repository, branch `main` and main file `app.py`.
-4. Under **Advanced settings**, choose a Python version (the platform default is 3.12; 3.12 or 3.13 are
-   expected to work given the wheel check above). No secrets are needed.
-5. Deploy. The first build installs OR-Tools and scikit-learn and may take a few minutes.
+1. Sign in at https://share.streamlit.io with GitHub and choose **Create app → Deploy a public app from GitHub**.
+2. Select repository `iwan-adler/resourcemind-ai`, branch `main` and main file `app.py`.
+3. Under **Advanced settings**, choose Python 3.12 (the platform default; CI-tested along with 3.13).
+   No secrets are needed.
+4. Deploy. The first build installs OR-Tools and scikit-learn and may take a few minutes.
 
 As checked on 2026-10-20, Community Cloud defaults to Python 3.12 and lets you pick a supported version in
 Advanced settings. Check https://docs.streamlit.io/deploy/streamlit-community-cloud for current limits.
