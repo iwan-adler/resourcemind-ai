@@ -82,3 +82,17 @@ def test_deep_link_opens_requested_page_and_scenario():
     assert at.session_state["page"] == "Allocation planner"
     assert at.session_state["scenario"] == "surge"
     assert any("Allocation planner" in t.value for t in at.title)
+
+
+def test_daily_planning_mode_renders_every_page(app):
+    app.sidebar.radio(key="planning_mode").set_value("daily").run()
+    assert not app.exception
+    for page in PAGES:
+        app.sidebar.radio(key="page").set_value(page).run()
+        assert not app.exception, (page, [e.value for e in app.exception])
+    app.sidebar.radio(key="page").set_value("Allocation planner").run()
+    assert any(s.value == "Teams stationed per zone and day" for s in app.subheader)
+    assert "Day-by-day plan" in _texts(app)
+    assert any("service_lost_requests" in d.value.columns for d in app.dataframe)
+    app.sidebar.radio(key="planning_mode").set_value("single").run()
+    assert not any(s.value == "Teams stationed per zone and day" for s in app.subheader)

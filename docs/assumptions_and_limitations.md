@@ -29,7 +29,9 @@ Any real use would need human review, domain validation, and governance.
 * Teams are identical and handle a fixed number of requests per day everywhere.
 * Demand is aggregated over the horizon; timing within the week, response-time targets and queueing
   are not modelled. Coverage here means *service capacity matched to forecast volume*, not response time.
-* Repositioning is a single move at the start of the horizon; travel time is a cost, not lost service time.
+* Repositioning is a single move at the start of the horizon in the default single-period mode; travel time
+  is a cost, not lost service time. The optional day-by-day mode moves teams daily and deducts travel time
+  from a 480-minute shift (an assumption), but has no backlog, crew-hour rules or rolling re-planning.
 * Maximum useful service (K) and staging capacity (M) are synthetic parameters.
 
 ## How priority weights are chosen

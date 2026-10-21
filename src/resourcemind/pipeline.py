@@ -13,11 +13,19 @@ from datetime import UTC, datetime
 import numpy as np
 import pandas as pd
 
-from resourcemind.allocation.baselines import current_allocation, greedy_allocation
+from resourcemind.allocation.baselines import current_allocation, current_daily, greedy_allocation, greedy_daily
 from resourcemind.allocation.explain import plan_summary, zone_rationale
 from resourcemind.allocation.models import AllocationProblem, AllocationResult, Outcome, compute_outcome
+from resourcemind.allocation.multiperiod import (
+    DailyOutcome,
+    DailyResult,
+    MultiPeriodProblem,
+    compute_daily_outcome,
+    daily_problem_from,
+    optimize_daily,
+)
 from resourcemind.allocation.optimizer import optimize_allocation
-from resourcemind.allocation.validation import Violation, validate_allocation
+from resourcemind.allocation.validation import Violation, validate_allocation, validate_daily_plan
 from resourcemind.config import AppConfig
 from resourcemind.data.generate import Dataset, generate_dataset
 from resourcemind.data.validate import DataValidationError, validate_dataset
@@ -61,6 +69,23 @@ class StrategyRun:
 
 
 @dataclass
+class DailyRun:
+    result: DailyResult
+    outcome: DailyOutcome | None
+    violations: list[Violation]
+
+
+@dataclass
+class DailyPlanning:
+    """Day-by-day plan (planning_mode = "daily") for the same scenario and forecast."""
+
+    problem: MultiPeriodProblem
+    runs: dict[str, DailyRun]
+    comparison: pd.DataFrame
+    zone_tables: dict[str, pd.DataFrame]
+
+
+@dataclass
 class PipelineResult:
     config: AppConfig
     settings: PipelineSettings
@@ -77,6 +102,22 @@ class PipelineResult:
     summary_lines: list[str]
     timings: dict[str, float]
     created_at: str
+    # Present only when config.planning_mode == "daily". The single-period
+    # problem, runs and comparison above are always computed as well.
+    daily: DailyPlanning | None = None
+
+    @property
+    def planning_mode(self) -> str:
+        return "daily" if self.daily is not None else "single"
+
+    @property
+    def active_comparison(self) -> pd.DataFrame:
+        """Strategy comparison for the selected planning mode."""
+        return self.daily.comparison if self.daily is not None else self.comparison
+
+    @property
+    def active_zone_tables(self) -> dict[str, pd.DataFrame]:
+        return self.daily.zone_tables if self.daily is not None else self.zone_tables
 
 
 def gap_table(inputs: ScenarioInputs, demand: pd.DataFrame, problem: AllocationProblem) -> pd.DataFrame:
@@ -134,40 +175,115 @@ def run_strategies(problem: AllocationProblem, config: AppConfig) -> dict[str, S
     return runs
 
 
+def _comparison_row(key: str, run, problem, demand: np.ndarray, served: np.ndarray | None) -> dict:
+    """Metrics shared by both planning modes; demand/served are per-zone horizon totals."""
+    row = {
+        "strategy": key,
+        "label": STRATEGY_LABELS[key],
+        "status": run.result.status,
+        "hard_violations": len(run.violations),
+        "runtime_ms": run.result.runtime_seconds * 1000.0,
+    }
+    if run.outcome is not None:
+        o = run.outcome
+        total_demand = float(demand.sum())
+        zt = zone_outcome_table(
+            problem.zone_ids, problem.zone_names, problem.priority_tiers, problem.weights, demand, served
+        )
+        row.update(
+            total_demand=total_demand,
+            served=float(served.sum()),
+            total_unmet=float((demand - served).sum()),
+            weighted_unmet=o.weighted_unmet,
+            coverage=coverage_ratio(served.sum(), total_demand),
+            travel_minutes=o.travel_minutes,
+            teams_moved=o.teams_moved,
+            **fairness_summary(zt),
+        )
+    return row
+
+
 def comparison_table(problem: AllocationProblem, runs: dict[str, StrategyRun]) -> pd.DataFrame:
     rows = []
-    total_demand = float(problem.demand.sum())
     for key in STRATEGIES:
         run = runs[key]
-        row = {
-            "strategy": key,
-            "label": STRATEGY_LABELS[key],
-            "status": run.result.status,
-            "hard_violations": len(run.violations),
-            "runtime_ms": run.result.runtime_seconds * 1000.0,
-        }
-        if run.outcome is not None:
-            o = run.outcome
-            zt = zone_outcome_table(
-                problem.zone_ids,
-                problem.zone_names,
-                problem.priority_tiers,
-                problem.weights,
-                problem.demand,
-                o.served,
-            )
-            row.update(
-                total_demand=total_demand,
-                served=float(o.served.sum()),
-                total_unmet=float(o.unmet.sum()),
-                weighted_unmet=o.weighted_unmet,
-                coverage=coverage_ratio(o.served.sum(), total_demand),
-                travel_minutes=o.travel_minutes,
-                teams_moved=o.teams_moved,
-                **fairness_summary(zt),
-            )
-        rows.append(row)
+        served = run.outcome.served if run.outcome is not None else None
+        rows.append(_comparison_row(key, run, problem, problem.demand, served))
     return pd.DataFrame(rows)
+
+
+def daily_demand(inputs: ScenarioInputs, forecast_daily: pd.DataFrame, basis: str = "point") -> np.ndarray:
+    """Integer demand per zone and day: daily forecast (point or upper) x stress multiplier."""
+    column = "predicted" if basis == "point" else "upper"
+    wide = forecast_daily.pivot(index="zone_id", columns="horizon", values=column).reindex(inputs.zone_ids)
+    mult = np.array([inputs.overrides.demand_multipliers.get(z, 1.0) for z in inputs.zone_ids])
+    return np.round(wide.to_numpy(dtype=float) * mult[:, None]).astype(int)
+
+
+def build_daily_problem(inputs: ScenarioInputs, problem: AllocationProblem, demand: np.ndarray) -> MultiPeriodProblem:
+    return daily_problem_from(
+        problem,
+        demand,
+        inputs.zones["max_useful_service_per_day"].to_numpy(dtype=int),
+        inputs.service_rate_per_day,
+    )
+
+
+def run_daily_strategies(problem: MultiPeriodProblem, config: AppConfig) -> dict[str, DailyRun]:
+    opt = config.optimizer
+    results = {
+        "current": current_daily(problem),
+        "greedy": greedy_daily(problem),
+        "optimized": optimize_daily(
+            problem,
+            mode=opt.mode,
+            travel_penalty_lambda=opt.travel_penalty_lambda,
+            time_limit_seconds=opt.time_limit_seconds,
+            num_workers=opt.num_workers,
+            seed=config.seed,
+        ),
+    }
+    runs = {}
+    for key, res in results.items():
+        outcome = compute_daily_outcome(problem, res.plan) if res.has_solution else None
+        violations = validate_daily_plan(problem, res.plan)
+        if key == "optimized" and violations and res.status in ("OPTIMAL", "FEASIBLE"):
+            res.messages.append("Independent validation FAILED; plan rejected.")
+            res.status = "INVALID"
+        runs[key] = DailyRun(res, outcome, violations)
+    return runs
+
+
+def daily_comparison_table(problem: MultiPeriodProblem, runs: dict[str, DailyRun]) -> pd.DataFrame:
+    """Same columns as ``comparison_table``; coverage and fairness use per-zone horizon totals."""
+    demand = problem.demand.sum(axis=1)
+    rows = []
+    for key in STRATEGIES:
+        run = runs[key]
+        served = run.outcome.served_total if run.outcome is not None else None
+        rows.append(_comparison_row(key, run, problem, demand, served))
+    return pd.DataFrame(rows)
+
+
+def run_daily_planning(
+    inputs: ScenarioInputs, problem: AllocationProblem, forecast: ZoneForecast, config: AppConfig
+) -> DailyPlanning:
+    dproblem = build_daily_problem(inputs, problem, daily_demand(inputs, forecast.daily, config.planning_basis))
+    runs = run_daily_strategies(dproblem, config)
+    demand = dproblem.demand.sum(axis=1)
+    zone_tables = {
+        k: zone_outcome_table(
+            dproblem.zone_ids,
+            dproblem.zone_names,
+            dproblem.priority_tiers,
+            dproblem.weights,
+            demand,
+            r.outcome.served_total,
+        )
+        for k, r in runs.items()
+        if r.outcome is not None
+    }
+    return DailyPlanning(dproblem, runs, daily_comparison_table(dproblem, runs), zone_tables)
 
 
 def run_pipeline(
@@ -216,6 +332,11 @@ def run_pipeline(
     t = time.perf_counter()
     runs = run_strategies(problem, config)
     timings["allocation"] = time.perf_counter() - t
+    daily = None
+    if config.planning_mode == "daily":
+        t = time.perf_counter()
+        daily = run_daily_planning(inputs, problem, forecast, config)
+        timings["daily_allocation"] = time.perf_counter() - t
 
     comparison = comparison_table(problem, runs)
     zone_tables = {
@@ -257,13 +378,14 @@ def run_pipeline(
         summary_lines=summary,
         timings=timings,
         created_at=datetime.now(UTC).isoformat(timespec="seconds"),
+        daily=daily,
     )
 
 
 def run_record(result: PipelineResult) -> dict:
     """Machine-readable record of one run (exported as JSON)."""
     cfg = result.config
-    opt = result.runs["optimized"].result
+    opt = result.daily.runs["optimized"].result if result.daily is not None else result.runs["optimized"].result
     return {
         "created_at_utc": result.created_at,
         "data_provenance": "synthetic",
@@ -274,6 +396,7 @@ def run_record(result: PipelineResult) -> dict:
             "overrides": result.inputs.overrides.to_dict(),
         },
         "seed": cfg.seed,
+        "planning_mode": result.planning_mode,
         "forecast": {
             "model": result.forecast.model,
             "selection": "best validation MAE" if result.settings.model == "auto" else "user selected",
@@ -296,7 +419,7 @@ def run_record(result: PipelineResult) -> dict:
             "stage_statuses": opt.stage_statuses,
             "time_limit_seconds": cfg.optimizer.time_limit_seconds,
         },
-        "strategies": result.comparison.replace({np.nan: None}).to_dict(orient="records"),
+        "strategies": result.active_comparison.replace({np.nan: None}).to_dict(orient="records"),
         "timings_seconds": result.timings,
     }
 
@@ -340,6 +463,12 @@ def run_summary_markdown(result: PipelineResult) -> str:
         f"- Scenario: {rec['scenario']['name']} (`{rec['scenario']['key']}`)",
         f"- Changes: {'; '.join(rec['scenario']['changes']) or 'none'}",
         f"- Seed: {rec['seed']}",
+        f"- Planning mode: `{rec['planning_mode']}`"
+        + (
+            " (teams re-positioned day by day)"
+            if rec["planning_mode"] == "daily"
+            else " (one decision for the horizon)"
+        ),
         f"- Forecast model: {rec['forecast']['model']} ({rec['forecast']['selection']}), "
         f"horizon {rec['forecast']['horizon_days']} days, planning basis `{rec['forecast']['planning_basis']}`",
         f"- Solver: {rec['solver']['name']}, mode `{rec['solver']['mode']}`, status **{rec['solver']['status']}**",
@@ -355,7 +484,7 @@ def run_summary_markdown(result: PipelineResult) -> str:
         "| Strategy | Status | Weighted unmet | Unmet | Coverage | Travel (team-min) | Moved | Violations |",
         "|---|---|---|---|---|---|---|---|",
     ]
-    for row in result.comparison.to_dict(orient="records"):
+    for row in result.active_comparison.to_dict(orient="records"):
         if row.get("coverage") is None or pd.isna(row.get("coverage")):
             lines.append(f"| {row['label']} | {row['status']} | - | - | - | - | - | {row['hard_violations']} |")
         else:

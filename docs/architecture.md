@@ -17,6 +17,9 @@ simulation/scenarios.py ──► planning demand (forecast × stress) ──►
 allocation/baselines.py  ──► current, greedy           ┐
 allocation/optimizer.py  ──► CP-SAT (lexicographic)    ├─► allocation/models.compute_outcome (shared scoring)
                                                        ┘   allocation/validation.validate_allocation (independent)
+allocation/multiperiod.py ─► optional day-by-day CP-SAT ┐
+allocation/baselines.py  ──► current_daily, greedy_daily ├─► multiperiod.compute_daily_outcome (shared scoring)
+                                                       ┘   allocation/validation.validate_daily_plan (independent)
 allocation/explain.py    ──► per-zone rationale, plan summary
 metrics/evaluation.py    ──► forecast metrics, coverage, fairness
 simulation/sensitivity.py ─► re-solve all strategies across a parameter range

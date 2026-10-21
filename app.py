@@ -22,6 +22,7 @@ import pandas as pd  # noqa: E402
 import streamlit as st  # noqa: E402
 
 from resourcemind.allocation.models import compute_outcome, movements_table  # noqa: E402
+from resourcemind.allocation.multiperiod import daily_movements_table, stationed_table  # noqa: E402
 from resourcemind.config import AppConfig, config_from_dict, load_config  # noqa: E402
 from resourcemind.data.generate import generate_dataset  # noqa: E402
 from resourcemind.data.validate import DataValidationError  # noqa: E402
@@ -143,6 +144,16 @@ def sidebar() -> tuple[str, AppConfig, str, str]:
         with st.expander("Planning settings"):
             seed = st.number_input("Random seed (synthetic data)", 0, 999_999, BASE_CONFIG.seed, key="seed")
             horizon = st.slider("Forecast & planning horizon (days)", 1, 7, BASE_CONFIG.horizon_days, key="horizon")
+            planning_mode = st.radio(
+                "Planning mode",
+                ["single", "daily"],
+                format_func=lambda m: (
+                    "Single decision for the whole horizon" if m == "single" else "Day by day (teams move daily)"
+                ),
+                key="planning_mode",
+                help="Day by day: teams may move every day and travel time reduces the moving team's "
+                "service that day. Affects the Allocation planner and Strategy evaluation.",
+            )
             model = st.selectbox(
                 "Forecast model",
                 ["auto", *MODEL_REGISTRY],
@@ -185,7 +196,13 @@ def sidebar() -> tuple[str, AppConfig, str, str]:
         time_limit_seconds=float(time_limit),
         num_workers=BASE_CONFIG.optimizer.num_workers,
     )
-    cfg = BASE_CONFIG.with_updates(seed=int(seed), horizon_days=int(horizon), planning_basis=basis, optimizer=optimizer)
+    cfg = BASE_CONFIG.with_updates(
+        seed=int(seed),
+        horizon_days=int(horizon),
+        planning_basis=basis,
+        planning_mode=planning_mode,
+        optimizer=optimizer,
+    )
     return page, cfg, scenario, model
 
 
@@ -213,9 +230,17 @@ def export_panel(r: PipelineResult) -> None:
                 "text/csv",
                 width="stretch",
             )
+        if r.daily is not None and r.daily.runs["optimized"].outcome is not None:
+            st.download_button(
+                "Day-by-day movements (CSV)",
+                daily_movements_table(r.daily.problem, r.daily.runs["optimized"].result.plan).to_csv(index=False),
+                "resourcemind_daily_movements.csv",
+                "text/csv",
+                width="stretch",
+            )
         st.download_button(
             "Strategy comparison (CSV)",
-            r.comparison.to_csv(index=False),
+            r.active_comparison.to_csv(index=False),
             "resourcemind_strategies.csv",
             "text/csv",
             width="stretch",
@@ -297,6 +322,11 @@ def page_overview(r: PipelineResult) -> None:
     if r.inputs.changes:
         st.caption("Inputs changed from defaults: " + "; ".join(r.inputs.changes))
     status_strip(r)
+    if r.daily is not None:
+        st.info(
+            "Day-by-day planning is on: the **Allocation planner** and **Strategy evaluation** show the daily plan. "
+            "This overview shows the single repositioning decision for the whole horizon."
+        )
 
     p, cmp = r.problem, r.comparison.set_index("strategy")
     cur = cmp.loc["current"]
@@ -537,7 +567,156 @@ def constraint_checks(r: PipelineResult) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def daily_constraint_checks(r: PipelineResult) -> pd.DataFrame:
+    d = r.daily
+    rows = []
+    for key, run in d.runs.items():
+        row = {"Strategy": STRATEGY_LABELS[key], "Status": run.result.status}
+        if run.result.plan is None:
+            row.update({c: "no plan" for c in CONSTRAINTS})
+        else:
+            for c in CONSTRAINTS:
+                if c == "coverage floor" and d.problem.coverage_floor == 0:
+                    row[c] = "not active"
+                    continue
+                n = sum(v.constraint == c for v in run.violations)
+                row[c] = "Pass" if n == 0 else f"FAIL ({n})"
+            o = run.outcome
+            ok = (o.served <= d.problem.servable).all() and (o.served <= o.capacity).all()
+            row["service ≤ min(D, K, capacity after travel)"] = "Pass" if ok else "FAIL"
+        rows.append(row)
+    return pd.DataFrame(rows)
+
+
+def page_planner_daily(r: PipelineResult) -> None:
+    st.title("Allocation planner")
+    ui.disclaimer()
+    d = r.daily
+    p, opt = d.problem, d.runs["optimized"]
+    validated = opt.outcome is not None and not opt.violations
+    pills = [
+        ui.pill(f"Solver: {opt.result.status}", ui.status_tone(opt.result.status)),
+        ui.pill(
+            "Constraints verified independently" if validated else "No validated plan",
+            "good" if validated else "critical",
+        ),
+        ui.pill(f"Day-by-day plan · {p.horizon} days", "info"),
+        ui.pill("Synthetic data", "warning"),
+    ]
+    st.markdown(" ".join(pills), unsafe_allow_html=True)
+    st.caption(
+        f"Runtime {opt.result.runtime_seconds * 1000:.0f} ms · stages: "
+        + ", ".join(f"{k} = {v}" for k, v in opt.result.stage_statuses.items())
+        + f" · objective mode: {r.config.optimizer.mode}"
+    )
+    for m in opt.result.messages:
+        st.caption(m)
+
+    if not validated:
+        st.error(
+            f"The day-by-day optimizer did not produce a valid plan (status **{opt.result.status}**). "
+            "No recommendation is shown as feasible."
+        )
+        for line in opt.result.messages + opt.result.diagnostics.get("infeasibility_reasons", []):
+            st.markdown(f"- {line}")
+    else:
+        o, cur, gr = opt.outcome, d.runs["current"].outcome, d.runs["greedy"].outcome
+        mv = daily_movements_table(p, opt.result.plan)
+        ui.cards(
+            [
+                {
+                    "label": "Team moves (all days)",
+                    "value": o.teams_moved,
+                    "sub": f"{o.travel_minutes:.0f} team-minutes",
+                    "tone": "info",
+                },
+                {
+                    "label": "Weighted unmet",
+                    "value": f"{o.weighted_unmet:,.1f}",
+                    "sub": f"current {cur.weighted_unmet:,.1f} · greedy {gr.weighted_unmet:,.1f}"
+                    if gr is not None
+                    else f"current {cur.weighted_unmet:,.1f}",
+                    "tone": "good" if o.weighted_unmet < cur.weighted_unmet else "neutral",
+                },
+                {
+                    "label": "Requests served",
+                    "value": fmt_int(o.served.sum()),
+                    "sub": f"from {cur.served.sum():,} of {p.demand.sum():,}",
+                    "tone": "neutral",
+                },
+                {
+                    "label": "Service lost to travel",
+                    "value": f"{mv['service_lost_requests'].sum():,.1f}",
+                    "sub": f"requests (teams drive on a {p.minutes_per_shift}-min shift)",
+                    "tone": "neutral",
+                },
+            ]
+        )
+        st.subheader("Teams stationed per zone and day")
+        table = stationed_table(p, opt.result.plan)
+        st.plotly_chart(charts.daily_teams_heatmap(table, p.staging_capacity), width="stretch")
+        st.caption(
+            "Day 0 = current positions. Each later column = teams in the zone at the end of that day, after the "
+            "day's moves."
+        )
+        with st.expander("Accessible table version of the heatmap", expanded=False):
+            st.dataframe(table.assign(**{"Staging M": p.staging_capacity}), width="stretch")
+
+    tabs = st.tabs(["Movements by day", "Daily demand and service", "Constraint checks"])
+    with tabs[0]:
+        if opt.result.plan is None:
+            st.info("No movement plan: the optimizer did not return a solution.")
+        else:
+            mv = daily_movements_table(p, opt.result.plan)
+            if mv.empty:
+                st.success("The optimizer recommends keeping every team in place on every day.")
+            else:
+                st.dataframe(mv, hide_index=True, width="stretch")
+            st.caption(
+                f"A team that moves on day d spends T minutes of its {p.minutes_per_shift}-minute shift driving and "
+                f"serves R × (1 − T/{p.minutes_per_shift}) requests that day (R = {p.service_per_team}/day)."
+            )
+    with tabs[1]:
+        if opt.outcome is None:
+            st.info("No plan to show.")
+        else:
+            o = opt.outcome
+            rows = []
+            for i in range(p.n):
+                for day in range(p.horizon):
+                    rows.append(
+                        {
+                            "zone_id": p.zone_ids[i],
+                            "zone_name": p.zone_names[i],
+                            "day": day + 1,
+                            "demand": int(p.demand[i, day]),
+                            "teams": int(o.stationed[i, day]),
+                            "capacity_after_travel": int(o.capacity[i, day]),
+                            "served": int(o.served[i, day]),
+                            "unmet": int(o.unmet[i, day]),
+                        }
+                    )
+            st.dataframe(pd.DataFrame(rows), hide_index=True, width="stretch")
+            st.caption(
+                "Daily demand = daily forecast × stress multiplier, rounded per day (so the horizon total can "
+                "differ by a few requests from the single-period plan, which rounds the total)."
+            )
+    with tabs[2]:
+        st.dataframe(daily_constraint_checks(r), hide_index=True, width="stretch")
+        st.caption(
+            "Checked per day by resourcemind.allocation.validation.validate_daily_plan, independently of the "
+            "solver: flow conservation, retention, staging capacity and route eligibility."
+        )
+        for key, run in d.runs.items():
+            if run.violations:
+                with st.expander(f"{STRATEGY_LABELS[key]}: {len(run.violations)} violation(s)"):
+                    st.dataframe(pd.DataFrame([v.__dict__ for v in run.violations]), hide_index=True, width="stretch")
+
+
 def page_planner(r: PipelineResult) -> None:
+    if r.daily is not None:
+        page_planner_daily(r)
+        return
     st.title("Allocation planner")
     ui.disclaimer()
     opt = r.runs["optimized"]
@@ -863,7 +1042,14 @@ def page_strategies(r: PipelineResult, cfg: AppConfig, key_args: tuple) -> None:
         "All three strategies use the **same** demand, teams, capacities, travel times and eligibility rules, "
         "and are scored by the same outcome function and validator."
     )
-    c = r.comparison.copy()
+    if r.daily is not None:
+        st.info(
+            "Day-by-day planning mode: strategies re-plan every day; travel time reduces the moving team's service "
+            "that day. Greedy applies the single-period rule one day at a time without look-ahead. "
+            "The sensitivity analysis below still uses the single-period model."
+        )
+    cmp = r.active_comparison
+    c = cmp.copy()
     c["constraint_check"] = np.where(
         c["hard_violations"] == 0, "Pass (0 violations)", "FAIL (" + c["hard_violations"].astype(str) + ")"
     )
@@ -900,14 +1086,10 @@ def page_strategies(r: PipelineResult, cfg: AppConfig, key_args: tuple) -> None:
         },
     )
     a, b, d = st.columns(3)
-    a.plotly_chart(charts.strategy_bars(r.comparison, "weighted_unmet", "Weighted unmet demand"), width="stretch")
-    pct_cmp = (
-        r.comparison.assign(coverage_pct=r.comparison["coverage"] * 100) if "coverage" in r.comparison else r.comparison
-    )
+    a.plotly_chart(charts.strategy_bars(cmp, "weighted_unmet", "Weighted unmet demand"), width="stretch")
+    pct_cmp = cmp.assign(coverage_pct=cmp["coverage"] * 100) if "coverage" in cmp else cmp
     b.plotly_chart(charts.strategy_bars(pct_cmp, "coverage_pct", "Coverage (%)"), width="stretch")
-    d.plotly_chart(
-        charts.strategy_bars(r.comparison, "travel_minutes", "Travel (team-minutes)", ".0f"), width="stretch"
-    )
+    d.plotly_chart(charts.strategy_bars(cmp, "travel_minutes", "Travel (team-minutes)", ".0f"), width="stretch")
 
     st.subheader("Fairness and distribution")
     st.markdown(
@@ -915,9 +1097,9 @@ def page_strategies(r: PipelineResult, cfg: AppConfig, key_args: tuple) -> None:
         "badly covered. Compare zone-level coverage below; the Scenario lab's coverage floor makes equity a hard "
         "constraint so the trade-off becomes explicit."
     )
-    st.plotly_chart(charts.zone_coverage_chart(r.zone_tables, STRATEGY_LABELS), width="stretch")
+    st.plotly_chart(charts.zone_coverage_chart(r.active_zone_tables, STRATEGY_LABELS), width="stretch")
     tiers = []
-    for key, zt in r.zone_tables.items():
+    for key, zt in r.active_zone_tables.items():
         t = tier_table(zt)
         t.insert(0, "strategy", STRATEGY_LABELS[key])
         tiers.append(t)
