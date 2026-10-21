@@ -887,6 +887,7 @@ def page_strategies(r: PipelineResult, cfg: AppConfig, key_args: tuple) -> None:
         width="stretch",
         column_config={
             "label": "Strategy",
+            "status": "Status",
             "constraint_check": "Hard constraints",
             "weighted_unmet": st.column_config.NumberColumn("Weighted unmet", format="%.1f"),
             "total_unmet": st.column_config.NumberColumn("Unmet requests", format="%.0f"),
@@ -1003,8 +1004,31 @@ def page_methodology() -> None:
 
 
 # --------------------------------------------------------------------------- main
+PAGE_SLUGS = {
+    "overview": "Command overview",
+    "forecasts": "Demand forecasts",
+    "planner": "Allocation planner",
+    "lab": "Scenario lab",
+    "strategies": "Strategy evaluation",
+    "methodology": "Methodology",
+}
+
+
+def apply_deep_link() -> None:
+    """On first load, honour ?page=<slug>&scenario=<key> so views can be linked directly."""
+    if st.session_state.get("deep_link_done"):
+        return
+    st.session_state["deep_link_done"] = True
+    params = st.query_params
+    if params.get("page") in PAGE_SLUGS:
+        st.session_state["page"] = PAGE_SLUGS[params["page"]]
+    if params.get("scenario") in PRESETS:
+        st.session_state["scenario"] = params["scenario"]
+
+
 def main() -> None:
     st.session_state.setdefault("lab_overrides", None)
+    apply_deep_link()
     page, cfg, scenario, model = sidebar()
     overrides = lab_state()
     replace = overrides is not None
