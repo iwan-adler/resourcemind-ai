@@ -1,11 +1,8 @@
-"""Counterfactual explanations: re-solve the real model with one move forced or forbidden.
+"""What-if analysis: re-solve the allocation model with one move forced or forbidden.
 
-* ``force_move``  answers "why not move k team(s) from A to B?"
-* ``forbid_move`` answers "why does the plan move teams from A to B?"
-
-Both re-run the same lexicographic CP-SAT model as the recommendation, with one
-extra bound on x[A, B], and compare the result with the recommended plan using
-the shared outcome function. Nothing is estimated: every number is a re-solve.
+``force_move`` requires at least k teams on the route A -> B; ``forbid_move`` disallows it.
+Both add one bound on x[A, B] to the lexicographic CP-SAT model and compare the result
+with the recommended plan using ``compute_outcome``.
 """
 
 from __future__ import annotations

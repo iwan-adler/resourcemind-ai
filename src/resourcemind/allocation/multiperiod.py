@@ -1,6 +1,6 @@
 """Day-by-day (multi-period) team repositioning with Google OR-Tools CP-SAT.
 
-The single-period model (optimizer.py) makes ONE repositioning decision for the
+The single-period model (optimizer.py) makes one repositioning decision for the
 whole horizon. This model plans every day d = 1..H: teams may move each day,
 and a team that moves loses the part of that day's shift spent travelling.
 
@@ -53,12 +53,12 @@ class MultiPeriodProblem:
     demand: np.ndarray  # D[i, d], integer service requests per zone and day, shape (n, H)
     available: np.ndarray  # A_i, teams in zone i before day 1
     staging_capacity: np.ndarray  # M_i, max teams stationed in zone i on any day
-    service_cap: np.ndarray  # K_i, max useful service requests in zone i per DAY
+    service_cap: np.ndarray  # K_i, max useful service requests in zone i per day
     weights: np.ndarray  # w_i
     travel: np.ndarray  # T[j, i], minutes
     eligible: np.ndarray  # bool[j, i]
     retain: np.ndarray  # minimum teams that must stay in zone i every day
-    service_per_team: int  # R, service requests per team per DAY
+    service_per_team: int  # R, service requests per team per day
     max_travel_minutes: int
     minutes_per_shift: int = MINUTES_PER_SHIFT
     # Equity policy applied per day: S[i, d] >= ceil(floor * min(D[i, d], K_i)).

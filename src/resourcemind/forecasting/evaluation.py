@@ -1,6 +1,6 @@
 """Chronological evaluation, empirical intervals and out-of-sample forecasts.
 
-Split is by TARGET date (last date = T):
+Split by target date (last date = T):
     train      : targets <= T - test_days - validation_days
     validation : the next `validation_days` days of targets
     test       : the final `test_days` days of targets
@@ -44,8 +44,8 @@ class ForecastEvaluation:
     # Per model: relative errors of horizon-total forecasts on the validation window,
     # one row per forecast origin and one column per zone (used by the robustness check).
     validation_total_residuals: dict[str, pd.DataFrame] = field(default_factory=dict)
-    # Same, on the held-out TEST window (model refitted on train + validation): never used
-    # for any choice, only to score plans out of sample.
+    # Same for the held-out test window (model refitted on train + validation); only used
+    # to score plans out of sample.
     test_total_residuals: dict[str, pd.DataFrame] = field(default_factory=dict)
 
 

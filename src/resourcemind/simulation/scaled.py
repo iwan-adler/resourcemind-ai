@@ -1,10 +1,9 @@
 """Synthetic allocation problems of any size, for scalability benchmarking.
 
 The demo dataset is limited to 8-12 zones. This module builds larger problems
-with the SAME structure as ``data/generate.py`` (density, demand model, legacy
+with the same structure as ``data/generate.py`` (density, demand model, legacy
 population-based staffing, staging capacity, service caps, travel model and
-45-minute repositioning limit), so solve times measured here describe the
-real model at a larger scale. Everything is synthetic and seeded.
+45-minute repositioning limit). All problems are synthetic and seeded.
 """
 
 from __future__ import annotations

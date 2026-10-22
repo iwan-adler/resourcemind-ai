@@ -1,4 +1,4 @@
-"""Small presentation helpers for the Streamlit app (styling only, no computation)."""
+"""Presentation helpers for the Streamlit app."""
 
 from __future__ import annotations
 
@@ -43,9 +43,8 @@ def inject_css() -> None:
 
 def disclaimer() -> None:
     st.markdown(
-        '<div class="rm-banner" role="note"><strong>Decision-support prototype.</strong> '
-        "All data are synthetic. Recommendations are model outputs for human review, "
-        "not operational dispatch instructions.</div>",
+        '<div class="rm-banner" role="note"><strong>Prototype.</strong> Synthetic data. '
+        "Outputs are for review only and are not dispatch instructions.</div>",
         unsafe_allow_html=True,
     )
 

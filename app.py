@@ -1,9 +1,6 @@
-"""ResourceMind AI - Streamlit dashboard.
+"""ResourceMind AI Streamlit dashboard.
 
-Run:  streamlit run app.py
-
-Every number on screen comes from resourcemind.pipeline.run_pipeline: real
-forecasting models, a real CP-SAT optimiser and an independent validator.
+Run with: streamlit run app.py
 """
 
 from __future__ import annotations
@@ -78,7 +75,7 @@ CONSTRAINTS = [
 ]
 
 
-# --------------------------------------------------------------------------- cached computation
+# Cached computation
 @st.cache_data(show_spinner=False, max_entries=6)
 def get_dataset(seed: int):
     return generate_dataset(BASE_CONFIG.with_updates(seed=seed))
@@ -135,7 +132,7 @@ def get_counterfactual(
     return force_move(result.problem, result.runs["optimized"].result.x, j, i, teams, result.config)
 
 
-# --------------------------------------------------------------------------- state helpers
+# State helpers
 def lab_state() -> dict | None:
     """Scenario-lab overrides (complete spec) or None when the preset is used unchanged."""
     return st.session_state.get("lab_overrides")
@@ -156,11 +153,11 @@ def pct(v) -> str:
     return "n/a" if v is None or (isinstance(v, float) and np.isnan(v)) else f"{v:.1%}"
 
 
-# --------------------------------------------------------------------------- sidebar
+# Sidebar
 def sidebar() -> tuple[str, AppConfig, str, str]:
     with st.sidebar:
         st.markdown("## ResourceMind AI")
-        st.caption("Adaptive emergency resource allocation · decision-support prototype · synthetic data")
+        st.caption("Emergency resource allocation prototype · synthetic data")
         page = st.radio("Section", PAGES, key="page")
         st.divider()
         scenario = st.selectbox(
@@ -309,14 +306,14 @@ def export_panel(r: PipelineResult) -> None:
         )
 
 
-# --------------------------------------------------------------------------- shared blocks
+# Shared blocks
 def status_strip(r: PipelineResult) -> None:
     opt = r.active_optimizer
     validated = opt.outcome is not None and not opt.violations
     parts = [
         ui.pill(f"Solver: {opt.result.status}", ui.status_tone(opt.result.status)),
         ui.pill(
-            "Constraints verified independently" if validated else "No validated plan",
+            "Constraints validated" if validated else "No validated plan",
             "good" if validated else "critical",
         ),
         ui.pill(f"Forecast: {r.forecast.model}", "info"),
@@ -330,7 +327,7 @@ def status_strip(r: PipelineResult) -> None:
 
 
 def plan_or_current(r: PipelineResult):
-    """Recommended plan when one exists, otherwise the current allocation (clearly labelled)."""
+    """Recommended plan if valid, otherwise the current allocation."""
     opt = r.runs["optimized"]
     if opt.outcome is not None and not opt.violations:
         return opt.result.x, opt.outcome, True
@@ -340,10 +337,7 @@ def plan_or_current(r: PipelineResult):
 
 def infeasible_box(r: PipelineResult) -> None:
     opt = r.active_optimizer
-    st.error(
-        f"The optimizer did not produce a valid plan (status **{opt.result.status}**). "
-        "No recommendation is shown as feasible."
-    )
+    st.error(f"No valid plan (solver status **{opt.result.status}**).")
     for line in opt.result.messages + opt.result.diagnostics.get("infeasibility_reasons", []):
         st.markdown(f"- {line}")
 
@@ -365,7 +359,7 @@ def map_table(r: PipelineResult, demand: np.ndarray, stationed: np.ndarray, serv
     )
 
 
-# --------------------------------------------------------------------------- pages
+# Pages
 def page_overview(r: PipelineResult) -> None:
     st.title("Command overview")
     ui.disclaimer()
@@ -427,7 +421,7 @@ def page_overview(r: PipelineResult) -> None:
         st.plotly_chart(charts.demand_trend(r.inputs.demand_wide(), r.forecast.daily), width="stretch")
         st.caption(
             f"Last 90 days of scenario history and the {H}-day forecast ({r.forecast.model}). "
-            "Shaded band: empirical interval from validation residuals."
+            "Band: empirical interval from validation residuals."
         )
     with right:
         st.subheader("Plan summary")
@@ -472,8 +466,8 @@ def page_overview(r: PipelineResult) -> None:
         moves_note = "Arrows = recommended team movements."
     st.plotly_chart(charts.zone_map(r.inputs.zones, map_problem, x, served, show_moves=show_plan), width="stretch")
     st.caption(
-        "Marker size = forecast demand; colour and shape = coverage status; label = zone · teams · coverage. "
-        f"{moves_note} Synthetic coordinates, not a real place."
+        "Marker size: forecast demand. Colour and shape: coverage status. Label: zone · teams · coverage. "
+        f"{moves_note} Schematic coordinates."
     )
     with st.expander("Accessible table version of the map", expanded=False):
         st.dataframe(
@@ -537,8 +531,8 @@ def page_forecasts(r: PipelineResult) -> None:
             },
         )
         st.caption(
-            "Forecast = model output from the scenario history. Stress × = explicit scenario stress test "
-            "applied after forecasting. Planning demand = what the allocator plans against."
+            "Forecast: model output on the scenario history. Stress ×: scenario multiplier applied after "
+            "forecasting. Planning demand: optimizer input."
         )
     with t2:
         daily = r.forecast.daily.pivot(index="zone_id", columns="target_date", values="predicted").round(1)
@@ -546,9 +540,9 @@ def page_forecasts(r: PipelineResult) -> None:
         st.dataframe(daily, width="stretch")
     with t3:
         st.markdown(
-            f"Chronological split by target date — train ≤ {fe.split['train_end']}, validation "
-            f"{fe.split['val_start']} to {fe.split['test_start']} (exclusive), test {fe.split['test_start']} to "
-            f"{fe.split['last_date']}. Evaluated on the unmodified history for horizons 1-{fe.horizon}."
+            f"Chronological split by target date. Train: up to {fe.split['train_end']}. Validation: "
+            f"{fe.split['val_start']} to {fe.split['test_start']} (exclusive). Test: {fe.split['test_start']} "
+            f"to {fe.split['last_date']}. Horizons 1–{fe.horizon}, unmodified history."
         )
         a, b = st.columns(2)
         with a:
@@ -583,8 +577,8 @@ def page_forecasts(r: PipelineResult) -> None:
         best_test = fe.test_metrics.sort_values("mae").iloc[0]["model"]
         if best_test != fe.selected_model:
             st.warning(
-                f"The best model on the test set ({best_test}) differs from the one selected on validation "
-                f"({fe.selected_model}). Selection is not changed after seeing test results."
+                f"Lowest test MAE: {best_test}. The default model ({fe.selected_model}) is selected on "
+                "validation MAE and is not changed after testing."
             )
         st.markdown("**Per-zone test MAE**")
         pz = fe.test_per_zone.pivot(index="zone_id", columns="model", values="mae").round(2)
@@ -656,7 +650,7 @@ def page_planner_daily(r: PipelineResult) -> None:
     pills = [
         ui.pill(f"Solver: {opt.result.status}", ui.status_tone(opt.result.status)),
         ui.pill(
-            "Constraints verified independently" if validated else "No validated plan",
+            "Constraints validated" if validated else "No validated plan",
             "good" if validated else "critical",
         ),
         ui.pill(f"Day-by-day plan · {p.horizon} days", "info"),
@@ -672,10 +666,7 @@ def page_planner_daily(r: PipelineResult) -> None:
         st.caption(m)
 
     if not validated:
-        st.error(
-            f"The day-by-day optimizer did not produce a valid plan (status **{opt.result.status}**). "
-            "No recommendation is shown as feasible."
-        )
+        st.error(f"No valid day-by-day plan (solver status **{opt.result.status}**).")
         for line in opt.result.messages + opt.result.diagnostics.get("infeasibility_reasons", []):
             st.markdown(f"- {line}")
     else:
@@ -773,21 +764,20 @@ def page_planner_daily(r: PipelineResult) -> None:
 
 
 def what_if_tab(r: PipelineResult, key_args: tuple) -> None:
-    """Counterfactual explanations: re-solve with one move forbidden or forced."""
+    """What-if tab: re-solve with one move forbidden or forced."""
     opt = r.runs["optimized"]
     if opt.outcome is None or opt.violations:
-        st.info("No what-if analysis: there is no validated plan to compare against.")
+        st.info("No validated plan to compare against.")
         return
     p = r.problem
     st.markdown(
-        "Each answer re-solves the real optimization model with one move **forbidden** or **forced**, "
-        "re-optimizes every other team, and compares the result with the recommended plan. Nothing is estimated."
+        "Each result re-solves the model with one move forbidden or forced and compares it with the recommended plan."
     )
-    st.markdown("**Why these moves?** What the plan would lose if each recommended move were not allowed:")
+    st.markdown("**Recommended moves:** cost of disallowing each move")
     with st.spinner("Re-solving once per recommended move..."):
         table = get_value_of_moves(*key_args)
     if table.empty:
-        st.success("The plan keeps every team in place, so there is no move to explain.")
+        st.success("The plan contains no moves.")
     else:
         st.dataframe(
             table.drop(columns=["from_zone", "to_zone"]),
@@ -803,12 +793,9 @@ def what_if_tab(r: PipelineResult, key_args: tuple) -> None:
                 "explanation": st.column_config.TextColumn("Explanation", width="large"),
             },
         )
-        st.caption(
-            "Zero cost means an equally good plan exists without that move: the recommended one is the cheapest of "
-            "several equivalent options, not the only way."
-        )
+        st.caption("A cost of zero means an equivalent plan exists without that move.")
 
-    st.markdown("**Why not a different move?** Force a move and see what it would cost:")
+    st.markdown("**Alternative move:** force a move and re-solve")
     labels = [f"{z} · {n}" for z, n in zip(p.zone_ids, p.zone_names, strict=True)]
     c1, c2, c3 = st.columns([2, 2, 1])
     j = c1.selectbox("Move teams from", range(p.n), format_func=lambda k: labels[k], key="wi_from")
@@ -862,12 +849,12 @@ def page_planner(r: PipelineResult, key_args: tuple) -> None:
             for i in range(p.n)
             if k != i and p.response_pairs[k, i]
         ]
-        own = "counts" if np.diag(p.response_pairs).all() else "does NOT count (local response is slower)"
+        own = "included" if np.diag(p.response_pairs).all() else "excluded (local response exceeds the standard)"
         st.info(
-            f"**Response-time standard: {p.response_standard_minutes:.0f} min.** Demand counts as covered only when a "
-            f"team can reach it within the standard. Service inside a team's own zone {own}; teams can also cover "
-            f"{len(cross)} neighbouring-zone route(s): {', '.join(cross) if cross else 'none'}. "
-            "The greedy baseline still reasons in-zone, but every plan is scored with the same response-aware rule.",
+            f"Response-time standard: {p.response_standard_minutes:.0f} min. Demand is covered only if a team "
+            f"can reach it within the standard. Own-zone service: {own}. Cross-zone routes within the "
+            f"standard ({len(cross)}): {', '.join(cross) if cross else 'none'}. Greedy plans in-zone; all plans "
+            "are scored with the response-time rule.",
             icon=":material/timer:",
         )
 
@@ -931,9 +918,8 @@ def page_planner(r: PipelineResult, key_args: tuple) -> None:
             },
         )
         st.caption(
-            f"One team serves R = {r.inputs.service_rate_per_day} requests/day × {r.config.horizon_days} days = "
-            f"{r.problem.service_per_team} requests over the horizon. Teams (resources) and requests "
-            "(service units) are different units."
+            f"R = {r.inputs.service_rate_per_day} requests/day × {r.config.horizon_days} days = "
+            f"{r.problem.service_per_team} requests per team over the horizon."
         )
     with tabs[1]:
         if opt.result.x is None:
@@ -955,16 +941,16 @@ def page_planner(r: PipelineResult, key_args: tuple) -> None:
                 column_config={"rationale": st.column_config.TextColumn("Rationale", width="large")},
             )
             st.caption(
-                "Limiting factor = which constraint stops the zone being served further under the plan "
-                "(binding constraint): demand, service cap K, staging capacity M or team capacity R·X."
+                "Limiting factor: the binding constraint per zone (demand, service cap K, staging capacity M "
+                "or team capacity R·X)."
             )
     with tabs[3]:
         what_if_tab(r, key_args)
     with tabs[4]:
         st.dataframe(constraint_checks(r), hide_index=True, width="stretch")
         st.caption(
-            "Checks are recomputed from the raw problem data by resourcemind.allocation.validation, "
-            "independently of the solver. Baselines face the same checks."
+            "Recomputed from the problem data (resourcemind.allocation.validation), independently of the "
+            "solver, for every strategy."
         )
         for key, run in r.runs.items():
             if run.violations:
@@ -983,10 +969,9 @@ def page_lab(r: PipelineResult, cfg: AppConfig, scenario: str, model: str) -> No
     st.title("Scenario lab")
     ui.disclaimer()
     st.markdown(
-        f"Start from **{PRESETS[scenario].name}** and change inputs below. The generated dataset is never "
-        "modified: overrides are stored separately and applied to copies. **Run simulation** re-validates the "
-        "scenario, re-forecasts (when history changes), recomputes gaps, re-runs all three strategies and "
-        "re-validates every plan."
+        f"Overrides are applied on top of **{PRESETS[scenario].name}**; the base dataset is not modified. "
+        "**Run simulation** re-runs validation, forecasting (if history changed), gap analysis and all "
+        "strategies."
     )
     eff = r.inputs.overrides
     z = r.inputs.zones
@@ -1110,7 +1095,7 @@ def page_lab(r: PipelineResult, cfg: AppConfig, scenario: str, model: str) -> No
         st.caption(f"Preset-inaccessible zones: {', '.join(sorted(preset_inacc))} (untick to reopen them).")
 
     if lab_state() is None:
-        st.info("No overrides yet: results equal the selected preset. Change inputs and press **Run simulation**.")
+        st.info("No overrides. Results match the selected preset.")
         return
 
     base = get_result(json.dumps(cfg.to_dict()), scenario, model, json.dumps(ScenarioOverrides().to_dict()), False)
@@ -1193,15 +1178,12 @@ def page_lab(r: PipelineResult, cfg: AppConfig, scenario: str, model: str) -> No
 def page_strategies(r: PipelineResult, cfg: AppConfig, key_args: tuple) -> None:
     st.title("Strategy evaluation")
     ui.disclaimer()
-    st.markdown(
-        "All three strategies use the **same** demand, teams, capacities, travel times and eligibility rules, "
-        "and are scored by the same outcome function and validator."
-    )
+    st.markdown("All strategies use the same inputs and are scored by the same outcome function and validator.")
     if r.daily is not None:
         st.info(
-            "Day-by-day planning mode: strategies re-plan every day; travel time reduces the moving team's service "
-            "that day. Greedy applies the single-period rule one day at a time without look-ahead. "
-            "The sensitivity analysis below re-solves the day-by-day strategies (about 0.5-2 s per point)."
+            "Day-by-day mode: strategies re-plan daily and travel time reduces a moving team's service that day. "
+            "Greedy applies the single-period rule per day without look-ahead. Sensitivity analysis re-solves "
+            "the day-by-day strategies (about 0.5–2 s per point)."
         )
     cmp = r.active_comparison
     c = cmp.copy()
@@ -1248,9 +1230,8 @@ def page_strategies(r: PipelineResult, cfg: AppConfig, key_args: tuple) -> None:
 
     st.subheader("Fairness and distribution")
     st.markdown(
-        "Priority weights do **not** guarantee fairness. Minimising weighted unmet demand can leave a single zone "
-        "badly covered. Compare zone-level coverage below; the Scenario lab's coverage floor makes equity a hard "
-        "constraint so the trade-off becomes explicit."
+        "Priority weights do not guarantee equitable coverage: minimising weighted unmet demand can leave "
+        "individual zones poorly covered. The coverage floor in the Scenario lab enforces a minimum per zone."
     )
     st.plotly_chart(charts.zone_coverage_chart(r.active_zone_tables, STRATEGY_LABELS), width="stretch")
     tiers = []
@@ -1259,7 +1240,7 @@ def page_strategies(r: PipelineResult, cfg: AppConfig, key_args: tuple) -> None:
         t.insert(0, "strategy", STRATEGY_LABELS[key])
         tiers.append(t)
     if tiers:
-        st.markdown("**Coverage by priority tier** (tiers come from the synthetic vulnerability proxy)")
+        st.markdown("**Coverage by priority tier** (synthetic vulnerability proxy)")
         st.dataframe(
             pd.concat(tiers),
             hide_index=True,
@@ -1269,15 +1250,14 @@ def page_strategies(r: PipelineResult, cfg: AppConfig, key_args: tuple) -> None:
 
     st.subheader("Robustness to forecast error")
     st.markdown(
-        "A plan is fixed before demand is known. This check scores each plan against 200 demand outcomes built from "
-        "the forecast model's **real errors on the held-out test window**, keeping each day's errors together across "
-        f"zones. It shows the average coverage, a bad-week (5th percentile) value, and how often coverage falls "
-        f"below {COVERAGE_TARGET:.0%}."
+        "Each plan is evaluated on 200 demand scenarios resampled from the forecast model's errors on the "
+        "held-out test window; errors from the same window are kept together across zones. Reported: mean "
+        f"coverage, 5th-percentile coverage and the share of scenarios below {COVERAGE_TARGET:.0%}."
     )
     if r.daily is not None:
-        st.caption("Uses the single-period plans (one decision for the horizon), also in day-by-day mode.")
+        st.caption("Evaluates the single-period plans.")
     include_expected = st.checkbox(
-        "Also build a plan optimized for the expected outcome over sampled demand (slower, up to ~20 s)",
+        "Include expected-outcome plan (sample average approximation, up to ~20 s)",
         key="rob_expected",
     )
     if st.button("Run robustness check", key="rob_run"):
@@ -1380,7 +1360,7 @@ def page_methodology() -> None:
                 st.warning(f"{path} not found.")
 
 
-# --------------------------------------------------------------------------- main
+# Main
 PAGE_SLUGS = {
     "overview": "Command overview",
     "forecasts": "Demand forecasts",

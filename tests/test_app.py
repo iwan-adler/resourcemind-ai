@@ -35,7 +35,7 @@ def test_every_page_and_scenario_renders(app):
 def test_disclaimer_and_status_visible(app):
     app.sidebar.radio(key="page").set_value("Command overview").run()
     text = _texts(app)
-    assert "Decision-support prototype" in text
+    assert "Prototype." in text
     assert "Solver: OPTIMAL" in text
     assert "Synthetic data" in text
 
@@ -51,7 +51,7 @@ def test_lab_override_changes_results_and_reset_restores(app):
     assert "Staging capacity: x0.3" in text
     app.button(key="lab_reset").click().run()
     assert app.session_state["lab_overrides"] is None
-    assert "No overrides yet" in _texts(app)
+    assert "No overrides. Results match the selected preset." in _texts(app)
 
 
 def test_sensitivity_button_runs_real_sweep(app):

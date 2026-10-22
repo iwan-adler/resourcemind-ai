@@ -30,7 +30,7 @@ def _served(problem: AllocationProblem, i: int, teams: int) -> int:
 def greedy_allocation(problem: AllocationProblem) -> AllocationResult:
     """Transparent single-team moves, best first.
 
-    Repeatedly move ONE team that has not yet moved, from origin j to zone i,
+    Repeatedly move one team that has not yet moved, from origin j to zone i,
     choosing the move with the highest score
 
         score = (gain_i - loss_j) / (1 + T_ji / 60)

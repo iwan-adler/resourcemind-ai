@@ -1,7 +1,7 @@
 """Deterministic synthetic data generation.
 
-Everything produced here is SYNTHETIC. Zone names, coordinates, populations and
-demand are invented for demonstration and do not describe any real place.
+All data are synthetic: zone names, coordinates, populations and demand are
+generated and do not describe a real place.
 
 Demand model (per zone i, day t, category c):
 
@@ -114,8 +114,7 @@ def generate_zones(config: AppConfig, rng: np.random.Generator) -> pd.DataFrame:
     per_capita = rng.uniform(0.12, 0.30, size=n)
     base_demand = np.round(population / 1000.0 * per_capita * (1.0 + 0.6 * vulnerability), 2)
 
-    # Legacy staffing: teams historically assigned in proportion to population,
-    # NOT to demand. This is the "static allocation" the planner improves on.
+    # Legacy staffing: teams assigned in proportion to population rather than demand.
     current_teams = _largest_remainder(population.astype(float), config.total_teams, minimum=1)
 
     rate = config.service_rate_per_team_per_day

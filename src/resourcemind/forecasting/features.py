@@ -1,7 +1,7 @@
 """Leakage-safe supervised features for direct multi-horizon forecasting.
 
 Each row is (zone, forecast origin t, horizon h) with target y[t + h].
-Every feature uses ONLY observations at or before the origin t:
+Every feature uses only observations at or before the origin t:
 
 * mean_7, mean_28, std_28: rolling statistics over days (t-6..t) and (t-27..t)
 * last_value: y[t]
@@ -62,8 +62,8 @@ def build_supervised(
     """Build one row per (zone, origin, horizon).
 
     Rows whose target lies beyond the last observed date are only included when
-    ``include_future`` is True (their ``y`` is NaN); those rows are used to make
-    genuine out-of-sample forecasts.
+    ``include_future`` is True (their ``y`` is NaN); those rows are used for
+    out-of-sample forecasts.
     """
     if not 1 <= horizon <= MAX_HORIZON:
         raise ValueError(f"horizon must be between 1 and {MAX_HORIZON}")

@@ -1,7 +1,7 @@
 """Central configuration for ResourceMind AI.
 
 All tunable parameters live in ``configs/default_scenario.json`` and are loaded
-into the dataclasses below. Nothing here requires secrets or network access.
+into the dataclasses below.
 """
 
 from __future__ import annotations

@@ -4,6 +4,8 @@
 
 **Adaptive emergency resource allocation under changing demand: a decision-support prototype.**
 
+**Live app:** https://resourcemind-ai.streamlit.app
+
 ![Command overview: forecast demand, team capacity, coverage and the optimized plan](docs/images/overview.png)
 
 ResourceMind AI forecasts near-term emergency service demand by zone, finds where team capacity falls short,
@@ -183,8 +185,7 @@ Measured results (synthetic data, mean of 5 seeds; full tables in [docs/evaluati
 
 ## Deploy (Streamlit Community Cloud, free)
 
-Not deployed yet. The code is on GitHub at https://github.com/iwan-adler/resourcemind-ai; deploying needs
-a Streamlit sign-in by the repository owner.
+Deployed at https://resourcemind-ai.streamlit.app from the `main` branch. To deploy your own copy:
 
 1. Sign in at https://share.streamlit.io with GitHub and choose **Create app → Deploy a public app from GitHub**.
 2. Select repository `iwan-adler/resourcemind-ai`, branch `main` and main file `app.py`.

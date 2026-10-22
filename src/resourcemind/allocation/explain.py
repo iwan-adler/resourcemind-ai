@@ -1,4 +1,4 @@
-"""Plain-language explanations derived from the computed plan (no LLM involved)."""
+"""Per-zone rationale and summary text derived from a computed plan."""
 
 from __future__ import annotations
 
