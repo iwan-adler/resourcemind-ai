@@ -5,11 +5,15 @@ Baselines need no fitting; they read leakage-safe columns built in features.py.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import HistGradientBoostingRegressor
 
 from resourcemind.forecasting.features import FEATURE_COLUMNS
+
+if TYPE_CHECKING:
+    from sklearn.ensemble import HistGradientBoostingRegressor
 
 
 class Forecaster:
@@ -75,6 +79,9 @@ class GradientBoosting(Forecaster):
             self.constant, self.model = float(y.mean()), None
             return self
         self.constant = None
+        # Imported here: scikit-learn is slow to import and only needed when fitting.
+        from sklearn.ensemble import HistGradientBoostingRegressor
+
         self.model = HistGradientBoostingRegressor(
             loss="poisson",
             learning_rate=0.05,

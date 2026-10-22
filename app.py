@@ -29,6 +29,7 @@ from resourcemind.allocation.multiperiod import (  # noqa: E402
 from resourcemind.config import AppConfig, config_from_dict, load_config  # noqa: E402
 from resourcemind.data.generate import generate_dataset  # noqa: E402
 from resourcemind.data.validate import DataValidationError  # noqa: E402
+from resourcemind.forecasting import precomputed  # noqa: E402
 from resourcemind.forecasting.evaluation import evaluate_forecasters  # noqa: E402
 from resourcemind.forecasting.models import MODEL_REGISTRY, model_label  # noqa: E402
 from resourcemind.metrics.evaluation import tier_table  # noqa: E402
@@ -84,7 +85,11 @@ def get_dataset(seed: int):
 @st.cache_data(show_spinner=False, max_entries=12)
 def get_forecast_eval(seed: int, horizon: int):
     cfg = BASE_CONFIG.with_updates(seed=seed, horizon_days=horizon)
-    return evaluate_forecasters(get_dataset(seed).demand_wide(), horizon, cfg.forecast, random_state=seed)
+    wide = get_dataset(seed).demand_wide()
+    stored = precomputed.load(wide, horizon, cfg.forecast, seed)
+    if stored is not None:
+        return stored
+    return evaluate_forecasters(wide, horizon, cfg.forecast, random_state=seed)
 
 
 @st.cache_data(show_spinner=False, max_entries=48)
